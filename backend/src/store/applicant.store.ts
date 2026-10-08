@@ -114,6 +114,8 @@ export interface ApplicantRecord {
   media: ApplicantMedia;
   qualification: ApplicantQualification;
   recommendedJourney: RecommendedJourney;
+  timelineAudit?: any;
+  identityCrossCheck?: any;
 }
 
 @Injectable()

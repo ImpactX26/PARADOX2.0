@@ -29,6 +29,10 @@ import { ApplicantRecord, ExtractedDocumentRecord, ExtractedCVData, WrittenEvalu
 import { VideoPitchStep } from './VideoPitchStep';
 import { CVUploader } from './CVUploader';
 import { WrittenEvaluationStep } from './WrittenEvaluationStep';
+import { DocumentVerifier } from './DocumentVerifier';
+import { CVGenerator } from './CVGenerator';
+import { PersonalizedBrochure } from './PersonalizedBrochure';
+import { ConsultantAdmissionsReport } from './ConsultantAdmissionsReport';
 
 interface WizardProps {
   applicant: ApplicantRecord;
@@ -56,6 +60,7 @@ export const Wizard: React.FC<WizardProps> = ({
   const [uploadCategory, setUploadCategory] = useState<string>('DEGREE');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cvInputRef = useRef<HTMLInputElement>(null);
+  const [step6Tab, setStep6Tab] = useState<'cv' | 'brochure' | 'split'>('cv');
 
   // Step 1: Form state
   const [name, setName] = useState(applicant.personal?.name || '');
@@ -63,9 +68,51 @@ export const Wizard: React.FC<WizardProps> = ({
   const [phone, setPhone] = useState(applicant.personal?.phone || '');
   const [age, setAge] = useState<number>(applicant.personal?.age || 24);
   const [city, setCity] = useState(applicant.personal?.city || 'Bangalore');
+  const [profileUrl, setProfileUrl] = useState(applicant.personal?.professionalProfileUrl || '');
   const [pathway, setPathway] = useState<'STUDY' | 'AUSBILDUNG' | 'CHANCENKARTE'>(
     applicant.motivation?.pathway || 'STUDY'
   );
+
+  // Compute profile authenticity heuristics
+  const computeProfileAuthenticity = (url: string, candidateName: string) => {
+    if (!url || !url.trim()) {
+      return { score: 0, status: 'UNVERIFIED' as const, message: 'No URL provided' };
+    }
+    const clean = url.trim().toLowerCase();
+    const isLinkedIn = clean.includes('linkedin.com/in/');
+    const isGithub = clean.includes('github.com/');
+    const isPortfolio = clean.startsWith('http://') || clean.startsWith('https://');
+
+    if (!isPortfolio) {
+      return { score: 20, status: 'SUSPECT' as const, message: 'Invalid URL scheme (must start with https://)' };
+    }
+
+    let score = 50;
+    let matchesName = false;
+    if (candidateName && candidateName.trim()) {
+      const nameParts = candidateName.toLowerCase().split(/\s+/).filter(p => p.length > 2);
+      matchesName = nameParts.some(part => clean.includes(part));
+    }
+
+    if (isLinkedIn) {
+      score = matchesName ? 95 : 75;
+    } else if (isGithub) {
+      score = matchesName ? 90 : 70;
+    } else {
+      score = matchesName ? 80 : 60;
+    }
+
+    const status = score >= 85 ? 'AUTHENTIC' as const : score >= 60 ? 'UNVERIFIED' as const : 'SUSPECT' as const;
+    return { 
+      score, 
+      status, 
+      message: matchesName 
+        ? 'Domain & candidate name slug verified' 
+        : 'Valid domain structure, generic/external handle' 
+    };
+  };
+
+  const profileAuth = computeProfileAuthenticity(profileUrl, name);
 
   // Sync state if applicant updates (e.g. from CV upload or persona switch)
   useEffect(() => {
@@ -74,6 +121,7 @@ export const Wizard: React.FC<WizardProps> = ({
     setPhone(applicant.personal?.phone || '');
     setAge(applicant.personal?.age || 24);
     setCity(applicant.personal?.city || 'Bangalore');
+    setProfileUrl(applicant.personal?.professionalProfileUrl || '');
     setPathway(applicant.motivation?.pathway || 'STUDY');
   }, [applicant]);
 
@@ -88,6 +136,9 @@ export const Wizard: React.FC<WizardProps> = ({
         age: Number(age),
         city,
         targetCountry: selectedCountry,
+        professionalProfileUrl: profileUrl,
+        profileAuthenticityScore: profileAuth.score,
+        profileAuthenticityStatus: profileAuth.status,
       },
       motivation: {
         ...applicant.motivation,
@@ -438,6 +489,41 @@ export const Wizard: React.FC<WizardProps> = ({
               </div>
             </div>
 
+            {/* Professional Profile URL & Authenticity Evaluator */}
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Professional Profile URL (LinkedIn, GitHub, Portfolio)
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                <div className="relative flex-1">
+                  <input
+                    type="url"
+                    value={profileUrl}
+                    onChange={(e) => setProfileUrl(e.target.value)}
+                    placeholder="https://linkedin.com/in/username or https://github.com/username"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 pr-10"
+                  />
+                  {profileUrl && (
+                    <span className="absolute right-3 top-2.5 text-xs">
+                      {profileAuth.status === 'AUTHENTIC' ? '🟢' : profileAuth.status === 'UNVERIFIED' ? '🟡' : '🔴'}
+                    </span>
+                  )}
+                </div>
+                {profileUrl && (
+                  <div className={`px-3 py-2 rounded-xl text-xs font-bold border flex items-center gap-2 ${
+                    profileAuth.status === 'AUTHENTIC'
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      : profileAuth.status === 'UNVERIFIED'
+                      ? 'bg-amber-50 text-amber-800 border-amber-200'
+                      : 'bg-red-50 text-red-800 border-red-200'
+                  }`}>
+                    <span>Authenticity: {profileAuth.score}%</span>
+                    <span className="text-[10px] font-normal">({profileAuth.message})</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Ingested Skills & Background Preview if CV was uploaded */}
             {applicant.skills && applicant.skills.length > 0 && (
               <div className="mt-4 pt-4 border-t border-slate-100">
@@ -468,10 +554,16 @@ export const Wizard: React.FC<WizardProps> = ({
 
       {/* ================= STEP 2: FORENSIC DOCUMENT SCANNER ================= */}
       {currentStep === 2 && (
-        <div className="space-y-6 animate-fadeIn">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="space-y-8 animate-fadeIn">
+          {/* Government ID & Credential Forensic Verifier with DPDP Masking */}
+          <DocumentVerifier
+            applicant={applicant}
+            onFileUpload={onFileUpload}
+          />
+
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-200">
             <div>
-              <h2 className="text-xl font-bold text-slate-900">Document Scanner & Forensic Fraud Detector</h2>
+              <h2 className="text-xl font-bold text-slate-900">Additional Certificate & Marksheet Ingestion</h2>
               <p className="text-xs text-slate-500">
                 Upload university degrees, marksheets, Goethe certificates, or your resume. Tesseract OCR and visual forensic algorithms parse institutional stamps and tamper indicators.
               </p>
@@ -805,6 +897,9 @@ export const Wizard: React.FC<WizardProps> = ({
             </div>
           </div>
 
+          {/* Expert German University Admissions Consultant Diagnostic Report */}
+          <ConsultantAdmissionsReport applicant={applicant} />
+
           {/* Missing Requirements Banners */}
           {applicant.qualification?.missingRequirements && applicant.qualification.missingRequirements.length > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
@@ -862,83 +957,123 @@ export const Wizard: React.FC<WizardProps> = ({
         </div>
       )}
 
-      {/* ================= STEP 6: SPLIT-SCREEN GERMAN LEBENSLAUF CV ================= */}
+      {/* ================= STEP 6: BILINGUAL LEBENSLAUF CV & PERSONALIZED BROCHURE ================= */}
       {currentStep === 6 && (
         <div className="space-y-6 animate-fadeIn">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <span className="text-xs font-semibold text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200">
-                Official German Tabular Format
-              </span>
-              <h2 className="text-xl font-bold text-slate-900 mt-1">DIN 5008 Tabellarischer Lebenslauf CV</h2>
-              <p className="text-xs text-slate-500">
-                Customized for: <strong className="text-slate-800">{applicant.personal?.name || 'Applicant'}</strong>. Split-screen comparison with official verification stamps and 1-click PDF download.
-              </p>
-            </div>
+          {/* Sub-tab Navigation */}
+          <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-3 rounded-2xl border border-slate-200 shadow-xs">
             <div className="flex items-center gap-2">
-              <a
-                href={`http://localhost:3000/api/applicant/${applicant.id}/cv`}
-                target="_blank"
-                rel="noreferrer"
-                className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all"
+              <button
+                onClick={() => setStep6Tab('cv')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                  step6Tab === 'cv'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
               >
-                <Download className="w-4 h-4 text-sky-400" /> 📄 Download German Lebenslauf PDF
-              </a>
+                <FileText className="w-3.5 h-3.5" />
+                <span>🇩🇪 / 🇬🇧 Bilingual CV Generator</span>
+              </button>
+
+              <button
+                onClick={() => setStep6Tab('brochure')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                  step6Tab === 'brochure'
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>📄 European Roadmap Prospectus</span>
+              </button>
+
+              <button
+                onClick={() => setStep6Tab('split')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                  step6Tab === 'split'
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Source Dossier & PDF Stream</span>
+              </button>
             </div>
+
+            <a
+              href={`http://localhost:3000/api/applicant/${applicant.id}/cv`}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-xs transition-all"
+            >
+              <Download className="w-3.5 h-3.5 text-blue-400" />
+              <span>Download PDF</span>
+            </a>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* Left Screen: Ingested Source Document Preview */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col justify-between">
-              <div>
+          {/* Sub-view Render */}
+          {step6Tab === 'cv' && (
+            <CVGenerator applicant={applicant} />
+          )}
+
+          {step6Tab === 'brochure' && (
+            <PersonalizedBrochure applicant={applicant} />
+          )}
+
+          {step6Tab === 'split' && (
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Left Screen: Ingested Source Document Preview */}
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center justify-between">
+                    <span>Source Verification Dossier</span>
+                    <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Verified
+                    </span>
+                  </h3>
+
+                  {applicant.documents && applicant.documents.length > 0 ? (
+                    <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/70 text-xs space-y-3 font-mono">
+                      <div className="pb-2 border-b border-slate-200 flex justify-between items-center text-[11px]">
+                        <span className="font-bold text-slate-800 truncate max-w-[200px]">{applicant.documents[0].fileName}</span>
+                        <span className="text-emerald-700 font-sans font-bold text-[10px] bg-emerald-100 px-2 py-0.5 rounded">
+                          CONFIDENCE: {applicant.documents[0].confidenceScore}%
+                        </span>
+                      </div>
+                      <div className="max-h-64 overflow-y-auto text-[11px] text-slate-600 whitespace-pre-wrap leading-relaxed">
+                        {applicant.documents[0].extractedText}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-slate-500 p-8 text-center border border-dashed rounded-xl">
+                      No raw document uploaded. Pre-filled from applicant intake or CV parsing.
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-slate-100 text-xs text-slate-500 flex items-center justify-between">
+                  <span>Provenance: {applicant.education?.provenance}</span>
+                  <span>Format: DIN 5008 Standard</span>
+                </div>
+              </div>
+
+              {/* Right Screen: Standardized German Lebenslauf HTML Preview */}
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs">
                 <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center justify-between">
-                  <span>Source Verification Dossier</span>
-                  <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Verified
-                  </span>
+                  <span>Tabellarischer Lebenslauf (DIN 5008 Standard)</span>
+                  <span className="text-[11px] text-slate-500">Live Rendered</span>
                 </h3>
 
-                {applicant.documents && applicant.documents.length > 0 ? (
-                  <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/70 text-xs space-y-3 font-mono">
-                    <div className="pb-2 border-b border-slate-200 flex justify-between items-center text-[11px]">
-                      <span className="font-bold text-slate-800 truncate max-w-[200px]">{applicant.documents[0].fileName}</span>
-                      <span className="text-emerald-700 font-sans font-bold text-[10px] bg-emerald-100 px-2 py-0.5 rounded">
-                        CONFIDENCE: {applicant.documents[0].confidenceScore}%
-                      </span>
-                    </div>
-                    <div className="max-h-64 overflow-y-auto text-[11px] text-slate-600 whitespace-pre-wrap leading-relaxed">
-                      {applicant.documents[0].extractedText}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-xs text-slate-500 p-8 text-center border border-dashed rounded-xl">
-                    No raw document uploaded. Pre-filled from applicant intake or CV parsing.
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-slate-100 text-xs text-slate-500 flex items-center justify-between">
-                <span>Provenance: {applicant.education?.provenance}</span>
-                <span>Format: DIN 5008 Standard</span>
+                <div className="border border-slate-200 rounded-xl overflow-hidden shadow-inner h-[500px]">
+                  <iframe
+                    title="German Lebenslauf Preview"
+                    src={`http://localhost:3000/api/applicant/${applicant.id}/cv`}
+                    className="w-full h-full border-0 bg-white"
+                  />
+                </div>
               </div>
             </div>
-
-            {/* Right Screen: Standardized German Lebenslauf HTML Preview */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs">
-              <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center justify-between">
-                <span>Tabellarischer Lebenslauf (DIN 5008 Standard)</span>
-                <span className="text-[11px] text-slate-500">Live Rendered</span>
-              </h3>
-
-              <div className="border border-slate-200 rounded-xl overflow-hidden shadow-inner h-[500px]">
-                <iframe
-                  title="German Lebenslauf Preview"
-                  src={`http://localhost:3000/api/applicant/${applicant.id}/cv`}
-                  className="w-full h-full border-0 bg-white"
-                />
-              </div>
-            </div>
-          </div>
+          )}
 
           <div className="flex justify-start pt-4">
             <button

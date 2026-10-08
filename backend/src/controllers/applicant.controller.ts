@@ -16,6 +16,8 @@ import { ApplicantStore, ApplicantRecord, ExtractedDocumentRecord } from '../sto
 import { DocumentScannerService } from '../services/document-scanner.service';
 import { RulesEngineService } from '../services/rules-engine.service';
 import { CvGeneratorService } from '../services/cv-generator.service';
+import { TimelineValidatorService } from '../services/timeline-validator.service';
+import { IdentityVerifierService } from '../services/identity-verifier.service';
 
 @Controller('api/applicant')
 export class ApplicantController {
@@ -26,6 +28,8 @@ export class ApplicantController {
     private readonly documentScannerService: DocumentScannerService,
     private readonly rulesEngineService: RulesEngineService,
     private readonly cvGeneratorService: CvGeneratorService,
+    private readonly timelineValidatorService: TimelineValidatorService,
+    private readonly identityVerifierService: IdentityVerifierService,
   ) {}
 
   /**
@@ -270,11 +274,16 @@ export class ApplicantController {
     // Update applicant state
     const afterUpdate = this.applicantStore.updateApplicant(applicant.id, updates);
 
-    // Re-evaluate rules
+    // Re-evaluate rules, timeline audit, and identity cross-check
     const evalResult = this.rulesEngineService.evaluateApplicant(afterUpdate);
+    const timelineAudit = this.timelineValidatorService.auditApplicantTimeline(afterUpdate);
+    const identityCrossCheck = this.identityVerifierService.crossCheckIdentity(afterUpdate);
+
     const finalEvaluated = this.applicantStore.updateApplicant(applicant.id, {
       qualification: evalResult.qualification,
       recommendedJourney: evalResult.recommendedJourney,
+      timelineAudit,
+      identityCrossCheck,
     });
 
     return {
@@ -349,10 +358,14 @@ export class ApplicantController {
   evaluateProfile(@Body('applicantId') applicantId?: string) {
     const applicant = this.applicantStore.getOrCreateApplicant(applicantId);
     const evalResult = this.rulesEngineService.evaluateApplicant(applicant);
+    const timelineAudit = this.timelineValidatorService.auditApplicantTimeline(applicant);
+    const identityCrossCheck = this.identityVerifierService.crossCheckIdentity(applicant);
 
     const updated = this.applicantStore.updateApplicant(applicant.id, {
       qualification: evalResult.qualification,
       recommendedJourney: evalResult.recommendedJourney,
+      timelineAudit,
+      identityCrossCheck,
     });
 
     return {
@@ -386,11 +399,45 @@ export class ApplicantController {
    * Returns formatted German Lebenslauf HTML
    */
   @Get(':id/cv')
-  getLebenslaufCv(@Param('id') id: string, @Res() res: Response) {
+  getLebenslaufCv(
+    @Param('id') id: string, 
+    @Query('lang') lang: string,
+    @Res() res: Response
+  ) {
     const applicant = this.applicantStore.getOrCreateApplicant(id);
-    const html = this.cvGeneratorService.generateLebenslaufHtml(applicant);
+    const html = this.cvGeneratorService.generateLebenslaufHtml(applicant, lang || 'de');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.send(html);
+  }
+
+  /**
+   * GET /api/applicant/:id/timeline
+   * Audits chronological feasibility and returns visual timeline milestones
+   */
+  @Get(':id/timeline')
+  getTimelineAudit(@Param('id') id: string) {
+    const applicant = this.applicantStore.getOrCreateApplicant(id);
+    const audit = this.timelineValidatorService.auditApplicantTimeline(applicant);
+    return {
+      success: true,
+      applicantId: applicant.id,
+      audit,
+    };
+  }
+
+  /**
+   * GET /api/applicant/:id/identity-crosscheck
+   * Cross-checks student name across all uploaded certificates and IDs
+   */
+  @Get(':id/identity-crosscheck')
+  getIdentityCrossCheck(@Param('id') id: string) {
+    const applicant = this.applicantStore.getOrCreateApplicant(id);
+    const report = this.identityVerifierService.crossCheckIdentity(applicant);
+    return {
+      success: true,
+      applicantId: applicant.id,
+      report,
+    };
   }
 
   /**
@@ -502,9 +549,13 @@ export class ApplicantController {
       });
 
       const evalRes = this.rulesEngineService.evaluateApplicant(updated);
+      const timelineAudit = this.timelineValidatorService.auditApplicantTimeline(updated);
+      const identityCrossCheck = this.identityVerifierService.crossCheckIdentity(updated);
       return this.applicantStore.updateApplicant(updated.id, {
         qualification: evalRes.qualification,
         recommendedJourney: evalRes.recommendedJourney,
+        timelineAudit,
+        identityCrossCheck,
       });
     }
 
@@ -579,9 +630,13 @@ export class ApplicantController {
       });
 
       const evalRes = this.rulesEngineService.evaluateApplicant(updated);
+      const timelineAudit = this.timelineValidatorService.auditApplicantTimeline(updated);
+      const identityCrossCheck = this.identityVerifierService.crossCheckIdentity(updated);
       return this.applicantStore.updateApplicant(updated.id, {
         qualification: evalRes.qualification,
         recommendedJourney: evalRes.recommendedJourney,
+        timelineAudit,
+        identityCrossCheck,
       });
     }
 
@@ -681,9 +736,13 @@ export class ApplicantController {
       });
 
       const evalRes = this.rulesEngineService.evaluateApplicant(updated);
+      const timelineAudit = this.timelineValidatorService.auditApplicantTimeline(updated);
+      const identityCrossCheck = this.identityVerifierService.crossCheckIdentity(updated);
       return this.applicantStore.updateApplicant(updated.id, {
         qualification: evalRes.qualification,
         recommendedJourney: evalRes.recommendedJourney,
+        timelineAudit,
+        identityCrossCheck,
       });
     }
 

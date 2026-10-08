@@ -4,15 +4,12 @@ import {
   GraduationCap, 
   Mic, 
   Calculator, 
-  Users, 
   ShieldCheck, 
-  Sparkles, 
   RotateCcw,
-  CheckCircle2,
   AlertTriangle,
-  UserPlus,
-  ChevronDown,
-  BookOpen
+  Briefcase,
+  FileText,
+  Home
 } from 'lucide-react';
 import { ApplicantRecord } from '../types';
 
@@ -20,10 +17,6 @@ interface NavbarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   applicant: ApplicantRecord | null;
-  applicants?: ApplicantRecord[];
-  onSwitchApplicant?: (id: string) => void;
-  onCreateNewApplicant?: () => void;
-  onInjectSample: (persona: string) => void;
   onReset: () => void;
   onCountryToggle: (country: 'Germany' | 'Austria') => void;
   selectedCountry: 'Germany' | 'Austria';
@@ -33,10 +26,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
   applicant,
-  applicants = [],
-  onSwitchApplicant,
-  onCreateNewApplicant,
-  onInjectSample,
   onReset,
   onCountryToggle,
   selectedCountry,
@@ -62,82 +51,39 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
-      {/* Top Banner & Quick Controls */}
+      {/* Top Banner & Single Active Session Control */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium bg-sky-50 text-sky-700 border border-sky-200/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
-            IMPACTX '26 Hackathon • Agentic AI Track
-          </span>
-          <span className="hidden sm:inline-block text-slate-400">|</span>
-          <span className="hidden sm:inline-block text-slate-500">
-            Educaro Deutschland GmbH
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium bg-blue-50 text-blue-700 border border-blue-200/60">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+            Educaro Germany Direct AI Gateway • AufenthG & DAAD Compliance
           </span>
         </div>
 
-        {/* Multi-Applicant Switcher & Jury Quick-Pitch Controls */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Multi-Applicant Switcher & New Applicant Button */}
-          {applicants.length > 0 && onSwitchApplicant && (
-            <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-lg border border-slate-200">
-              <select
-                value={applicant?.id || ''}
-                onChange={(e) => onSwitchApplicant(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-slate-700 py-0.5 px-1.5 focus:outline-none cursor-pointer max-w-[150px] truncate"
-              >
-                {applicants.map((a, i) => (
-                  <option key={a.id} value={a.id}>
-                    👤 {a.personal?.name || `Candidate #${i + 1}`} ({a.motivation?.pathway || 'STUDY'})
-                  </option>
-                ))}
-              </select>
+        {/* Single Active Session & Prominent Start New Application / Clear Button */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-lg border border-slate-200">
+            <span className="text-[11px] text-slate-500 font-medium">Active Session:</span>
+            <span className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              {applicant?.personal?.name?.trim() ? applicant.personal.name : 'New Applicant Intake'}
+            </span>
+            {applicant?.motivation?.pathway && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold uppercase">
+                {applicant.motivation.pathway}
+              </span>
+            )}
+          </div>
 
-              {onCreateNewApplicant && (
-                <button
-                  onClick={onCreateNewApplicant}
-                  className="px-2 py-0.5 bg-sky-600 hover:bg-sky-700 text-white rounded text-[11px] font-bold flex items-center gap-1 transition-all"
-                  title="Create fresh new applicant session"
-                >
-                  <UserPlus className="w-3 h-3" /> + New
-                </button>
-              )}
-            </div>
-          )}
-
-          <span className="text-slate-300 hidden sm:inline">|</span>
-
-          {/* 1-Click Test Data Injector for Jury */}
-          <span className="font-semibold text-slate-600 flex items-center gap-1 hidden md:flex">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            Jury Quick-Pitch:
-          </span>
-          <button
-            onClick={() => onInjectSample('aarav-study')}
-            className="px-2.5 py-1 bg-slate-100 hover:bg-sky-50 hover:text-sky-700 text-slate-700 font-medium rounded-lg border border-slate-200 transition-colors"
-            title="Load B.Tech Graduate with Anna University Degree"
-          >
-            🎓 Aarav • Study
-          </button>
-          <button
-            onClick={() => onInjectSample('priya-ausbildung')}
-            className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 font-medium rounded-lg border border-slate-200 transition-colors"
-            title="Load 12th + Goethe B2 German candidate for Healthcare Ausbildung"
-          >
-            🏥 Priya • Ausbildung
-          </button>
-          <button
-            onClick={() => onInjectSample('rahul-chancenkarte')}
-            className="px-2.5 py-1 bg-slate-100 hover:bg-purple-50 hover:text-purple-700 text-slate-700 font-medium rounded-lg border border-slate-200 transition-colors"
-            title="Load Senior DevOps with 6 yrs experience for Chancenkarte"
-          >
-            💼 Rahul • Chancenkarte
-          </button>
+          {/* Prominent Start New Application / Clear Button */}
           <button
             onClick={onReset}
-            className="p-1 text-slate-400 hover:text-red-500 transition-colors rounded-md"
-            title="Reset active applicant to fresh clean empty intake"
+            id="btn-start-new-application"
+            className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold rounded-lg text-xs flex items-center gap-1.5 transition-all shadow-xs hover:shadow-sm"
+            title="Purge current applicant session and start a brand new blank intake"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-3.5 h-3.5 text-red-600" />
+            <span>↺ Start New Application / Clear</span>
           </button>
         </div>
       </div>
@@ -145,18 +91,21 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Main Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
         {/* Brand */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-sky-400 flex items-center justify-center text-white shadow-md shadow-sky-500/20 font-black text-xl tracking-tight">
+        <div 
+          onClick={() => setActiveTab('landing')}
+          className="flex items-center gap-3 cursor-pointer group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-700 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20 font-black text-xl tracking-tight group-hover:scale-105 transition-transform">
             E
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-slate-900 text-lg tracking-tight">educaro</span>
               <span className="text-xs px-2 py-0.5 rounded-md bg-slate-900 text-amber-400 font-semibold tracking-wider uppercase">
-                Gateway AI
+                Germany Bridge
               </span>
             </div>
-            <p className="text-xs text-slate-500 font-medium">European AI Applicant Journey & Forensic Gateway</p>
+            <p className="text-xs text-slate-500 font-medium">Autonomous European AI Applicant Journey & Forensic Gateway</p>
           </div>
         </div>
 
@@ -198,7 +147,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                 />
                 <path
-                  className="text-sky-600 transition-all duration-700"
+                  className="text-blue-600 transition-all duration-700"
                   strokeDasharray={`${completenessPercent}, 100`}
                   strokeWidth="3.5"
                   strokeLinecap="round"
@@ -236,77 +185,101 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Primary Navigation Tabs */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-100 flex items-center gap-1 sm:gap-2 overflow-x-auto py-1">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-100 flex items-center gap-1 sm:gap-2 overflow-x-auto py-1.5">
         <button
-          onClick={() => setActiveTab('journey')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-            activeTab === 'journey'
-              ? 'bg-sky-50 text-sky-700 border border-sky-200/80 shadow-2xs'
+          onClick={() => setActiveTab('landing')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+            activeTab === 'landing'
+              ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
           }`}
         >
-          <Compass className="w-4 h-4 text-sky-600" />
-          🧭 Applicant Journey
+          <Home className="w-3.5 h-3.5" />
+          <span>Home / Pathways</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('journey')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+            activeTab === 'journey'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200/80 shadow-2xs font-bold'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+          }`}
+        >
+          <Compass className="w-3.5 h-3.5 text-blue-600" />
+          <span>🧭 Application Wizard</span>
         </button>
 
         <button
           onClick={() => setActiveTab('ranker')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
             activeTab === 'ranker'
-              ? 'bg-sky-50 text-sky-700 border border-sky-200/80 shadow-2xs'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200/80 shadow-2xs font-bold'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
           }`}
         >
-          <GraduationCap className="w-4 h-4 text-indigo-600" />
-          🎓 420+ German Universities (DAAD)
+          <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
+          <span>🎓 420+ Universities & Cutoffs</span>
         </button>
 
         <button
-          onClick={() => setActiveTab('courses')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-            activeTab === 'courses'
-              ? 'bg-sky-50 text-sky-700 border border-sky-200/80 shadow-2xs'
+          onClick={() => setActiveTab('ausbildung')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+            activeTab === 'ausbildung'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-2xs font-bold'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
           }`}
         >
-          <BookOpen className="w-4 h-4 text-sky-600" />
-          📚 Accredited Degree Programs & Cutoffs
+          <Briefcase className="w-3.5 h-3.5 text-emerald-600" />
+          <span>🏥 Duale Ausbildung Portal</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('chancenkarte')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+            activeTab === 'chancenkarte'
+              ? 'bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs font-bold'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+          }`}
+        >
+          <Compass className="w-3.5 h-3.5 text-amber-600" />
+          <span>💼 Chancenkarte Calculator</span>
         </button>
 
         <button
           onClick={() => setActiveTab('interview')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
             activeTab === 'interview'
-              ? 'bg-sky-50 text-sky-700 border border-sky-200/80 shadow-2xs'
+              ? 'bg-rose-50 text-rose-800 border border-rose-200/80 shadow-2xs font-bold'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
           }`}
         >
-          <Mic className="w-4 h-4 text-rose-600" />
-          🎙️ Mock Interview
+          <Mic className="w-3.5 h-3.5 text-rose-600" />
+          <span>🎙️ Mock Interview</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('cv_brochure')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+            activeTab === 'cv_brochure'
+              ? 'bg-purple-50 text-purple-800 border border-purple-200/80 shadow-2xs font-bold'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5 text-purple-600" />
+          <span>📄 CV & Brochure</span>
         </button>
 
         <button
           onClick={() => setActiveTab('calculator')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
             activeTab === 'calculator'
-              ? 'bg-sky-50 text-sky-700 border border-sky-200/80 shadow-2xs'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200/80 shadow-2xs font-bold'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
           }`}
         >
-          <Calculator className="w-4 h-4 text-emerald-600" />
-          💶 Financial Calculator
-        </button>
-
-        <button
-          onClick={() => setActiveTab('crm')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-            activeTab === 'crm'
-              ? 'bg-sky-50 text-sky-700 border border-sky-200/80 shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-          }`}
-        >
-          <Users className="w-4 h-4 text-amber-600" />
-          👔 Counselor CRM
+          <Calculator className="w-3.5 h-3.5 text-emerald-600" />
+          <span>💶 Financials</span>
         </button>
       </div>
     </header>
