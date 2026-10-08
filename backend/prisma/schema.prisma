@@ -1,0 +1,88 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Applicant {
+  id                      String    @id @default(uuid())
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  
+  // Category 1: Personal
+  name                    String?
+  email                   String?
+  phone                   String?
+  age                     Int?
+  city                    String?
+  countryOfOrigin         String?   @default("India")
+  targetCountry           String?   @default("Germany")
+
+  // Category 2: Education
+  degree                  String?
+  institution             String?
+  fieldOfStudy            String?
+  graduationYear          Int?
+  rawGrade                String?
+  germanGrade             Float?
+  educationVerified       Boolean   @default(false)
+  educationProvenance     String?   @default("Claimed")
+
+  // Category 3: Employment
+  employer                String?
+  role                    String?
+  durationMonths          Int?      @default(0)
+  responsibilities        String?
+  employmentVerified      Boolean   @default(false)
+
+  // Category 4: Skills
+  skills                  String?   // JSON array string
+
+  // Category 5: Languages
+  language                String?   @default("German")
+  cefrLevel               String?   @default("None")
+  englishLevel            String?   @default("None")
+  languageVerified        Boolean   @default(false)
+
+  // Category 6: Documents
+  documents               Document[]
+
+  // Category 7: Motivation
+  pathway                 String?   @default("STUDY") // STUDY, AUSBILDUNG, CHANCENKARTE
+  careerGoals             String?
+  relocationReason        String?
+
+  // Category 8: Media
+  videoPitchTranscript    String?
+  communicationRating     Float?    @default(0.0)
+
+  // Category 9: Qualification
+  chancenkartePoints      Int?      @default(0)
+  austriaPoints           Int?      @default(0)
+  apsRequired             Boolean   @default(false)
+  apsStatus               String?   @default("NOT_APPLIED")
+  status                  String?   @default("IN_PROGRESS")
+  missingRequirements     String?   // JSON array string
+
+  // Category 10: Recommended Journey
+  suggestedEducaroService String?
+  nextSteps               String?   // JSON array string
+}
+
+model Document {
+  id                  String     @id @default(uuid())
+  applicantId         String
+  applicant           Applicant  @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  createdAt           DateTime   @default(now())
+  fileName            String
+  fileType            String?
+  extractedText       String
+  authenticityStatus  String     // AUTHENTIC, SUSPECT, UNVERIFIED
+  confidenceScore     Float      @default(0.0)
+  tamperAlerts        String?    // JSON array string
+  provenanceTag       String     // "Verified from Document" or "Applicant-Provided Claim"
+  extractedFields     String?    // JSON object
+}
