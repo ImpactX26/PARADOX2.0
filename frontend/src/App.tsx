@@ -1,16 +1,24 @@
 import React, { useState } from 'react';
 import { Navbar } from './components/Navbar';
+import { LandingView } from './components/LandingView';
 import { Wizard } from './components/Wizard';
 import { UniversityRanker } from './components/UniversityRanker';
-import { MockInterview } from './components/MockInterview';
+import { AusbildungPortal } from './components/AusbildungPortal';
+import { ChancenkartePortal } from './components/ChancenkartePortal';
+import { InterviewSimulator } from './components/InterviewSimulator';
 import { FinancialCalculator } from './components/FinancialCalculator';
 import { CounselorCRM } from './components/CounselorCRM';
 import { CourseDirectory } from './components/CourseDirectory';
+import { CVGenerator } from './components/CVGenerator';
+import { PersonalizedBrochure } from './components/PersonalizedBrochure';
+import { DatabaseControlBar } from './store/applicantStore';
 import { ApplicantProvider, useApplicant } from './store/applicantContext';
 import { ApplicantRecord } from './types';
+import { FileText, Sparkles, Download } from 'lucide-react';
 
 const MainApp: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<string>('journey');
+  const [activeTab, setActiveTab] = useState<string>('landing');
+  const [cvBrochureSubTab, setCvBrochureSubTab] = useState<'cv' | 'brochure'>('cv');
   const [notification, setNotification] = useState<string | null>(null);
 
   const {
@@ -44,7 +52,7 @@ const MainApp: React.FC = () => {
       if (res?.scanResult) {
         showNotification(`✓ ${res.scanResult.fileName} scanned. Authenticity: ${res.scanResult.authenticityStatus}`);
       } else {
-        showNotification('✓ Document uploaded & scanned.');
+        showNotification('✓ Document uploaded & forensic OCR completed.');
       }
     } catch (e) {
       showNotification('Document upload failed. Please try again.');
@@ -68,12 +76,8 @@ const MainApp: React.FC = () => {
 
   const handleReset = async () => {
     await resetCurrentApplicant();
+    setActiveTab('landing');
     showNotification('Reset to fresh clean empty applicant intake.');
-  };
-
-  const handleCreateNew = async () => {
-    const created = await createNewApplicant();
-    showNotification(`Created fresh new applicant intake session.`);
   };
 
   const handleCountryToggle = (country: 'Germany' | 'Austria') => {
@@ -85,11 +89,24 @@ const MainApp: React.FC = () => {
     }
   };
 
+  const handlePathwaySelect = (pathway: 'STUDY' | 'AUSBILDUNG' | 'CHANCENKARTE') => {
+    if (pathway === 'STUDY') {
+      setActiveTab('journey');
+      showNotification('Selected Higher Education & UG Studies. Intake wizard active.');
+    } else if (pathway === 'AUSBILDUNG') {
+      setActiveTab('ausbildung');
+      showNotification('Selected Duale Ausbildung. Vocational portal active.');
+    } else if (pathway === 'CHANCENKARTE') {
+      setActiveTab('chancenkarte');
+      showNotification('Selected Chancenkarte (Opportunity Card). Calculator active.');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col font-sans pb-16">
       {/* Toast Notification */}
       {notification && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl shadow-xl border border-slate-700 animate-bounce">
+        <div className="fixed top-20 right-6 z-50 bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl shadow-xl border border-slate-700 animate-bounce">
           {notification}
         </div>
       )}
@@ -99,17 +116,13 @@ const MainApp: React.FC = () => {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         applicant={activeApplicant}
-        applicants={applicants}
-        onSwitchApplicant={switchApplicant}
-        onCreateNewApplicant={handleCreateNew}
-        onInjectSample={handleInjectSample}
         onReset={handleReset}
         onCountryToggle={handleCountryToggle}
         selectedCountry={selectedCountry}
       />
 
       {/* Main Content View Switcher */}
-      <main className="flex-1 pb-16">
+      <main className="flex-1 pb-12">
         {loading ? (
           <div className="py-24 text-center text-xs text-slate-500">
             Initializing Educaro European AI Gateway Engine...
@@ -120,6 +133,17 @@ const MainApp: React.FC = () => {
           </div>
         ) : (
           <>
+            {/* 1. Opening Landing View */}
+            {activeTab === 'landing' && (
+              <LandingView
+                onSelectPathway={handlePathwaySelect}
+                onOpenUniversityExplorer={() => setActiveTab('ranker')}
+                onOpenMockInterview={() => setActiveTab('interview')}
+                onOpenBrochure={() => setActiveTab('cv_brochure')}
+              />
+            )}
+
+            {/* 2. Applicant Journey Wizard */}
             {activeTab === 'journey' && (
               <Wizard
                 applicant={activeApplicant}
@@ -130,6 +154,7 @@ const MainApp: React.FC = () => {
               />
             )}
 
+            {/* 3. 420+ Universities & Bavarian GPA Cutoffs */}
             {activeTab === 'ranker' && (
               <UniversityRanker
                 applicant={activeApplicant}
@@ -137,23 +162,111 @@ const MainApp: React.FC = () => {
               />
             )}
 
+            {/* 4. Duale Ausbildung Dedicated Deep-Dive Portal */}
+            {activeTab === 'ausbildung' && (
+              <div className="max-w-7xl mx-auto px-4 py-8">
+                <AusbildungPortal
+                  applicant={activeApplicant}
+                  onSelectTrade={(tradeName) => {
+                    handleUpdateProfile({
+                      targetAusbildungTrade: tradeName,
+                      motivation: {
+                        ...activeApplicant.motivation,
+                        pathway: 'AUSBILDUNG',
+                      },
+                    });
+                    showNotification(`Selected vocational trade: ${tradeName}`);
+                  }}
+                />
+              </div>
+            )}
+
+            {/* 5. Chancenkarte 6-Point Opportunity Card Portal */}
+            {activeTab === 'chancenkarte' && (
+              <div className="max-w-7xl mx-auto px-4 py-8">
+                <ChancenkartePortal
+                  applicant={activeApplicant}
+                  onUpdateQualification={(score) => {
+                    handleUpdateProfile({
+                      chancenkartePoints: score,
+                    });
+                  }}
+                />
+              </div>
+            )}
+
+            {/* 6. Contextual Mock Interview Simulator */}
+            {activeTab === 'interview' && (
+              <div className="max-w-7xl mx-auto px-4 py-8">
+                <InterviewSimulator
+                  applicant={activeApplicant}
+                  selectedCountry={selectedCountry}
+                />
+              </div>
+            )}
+
+            {/* 7. Bilingual CV Generator & Candidate Roadmap Brochure */}
+            {activeTab === 'cv_brochure' && (
+              <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCvBrochureSubTab('cv')}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                        cvBrochureSubTab === 'cv'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>🇩🇪 / 🇬🇧 Bilingual CV (DIN 5008 / Europass)</span>
+                    </button>
+
+                    <button
+                      onClick={() => setCvBrochureSubTab('brochure')}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                        cvBrochureSubTab === 'brochure'
+                          ? 'bg-purple-600 text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                      <span>📄 2-Page Roadmap Prospectus</span>
+                    </button>
+                  </div>
+
+                  <a
+                    href={`http://localhost:3000/api/applicant/${activeApplicant.id}/cv`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-xs transition-all"
+                  >
+                    <Download className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Download Official PDF</span>
+                  </a>
+                </div>
+
+                {cvBrochureSubTab === 'cv' ? (
+                  <CVGenerator applicant={activeApplicant} />
+                ) : (
+                  <PersonalizedBrochure applicant={activeApplicant} />
+                )}
+              </div>
+            )}
+
+            {/* 8. Financial Calculator */}
+            {activeTab === 'calculator' && (
+              <FinancialCalculator />
+            )}
+
+            {/* 9. Accredited Degree Directory */}
             {activeTab === 'courses' && (
               <div className="max-w-7xl mx-auto px-4 py-8">
                 <CourseDirectory applicant={activeApplicant} />
               </div>
             )}
 
-            {activeTab === 'interview' && (
-              <MockInterview
-                applicant={activeApplicant}
-                selectedCountry={selectedCountry}
-              />
-            )}
-
-            {activeTab === 'calculator' && (
-              <FinancialCalculator />
-            )}
-
+            {/* 10. Counselor CRM */}
             {activeTab === 'crm' && (
               <CounselorCRM
                 onSelectApplicant={(selected) => {
@@ -168,8 +281,15 @@ const MainApp: React.FC = () => {
         )}
       </main>
 
+      {/* Persistent Database Control Bar at Bottom */}
+      <DatabaseControlBar
+        applicant={activeApplicant}
+        onResetAll={handleReset}
+        onNotify={showNotification}
+      />
+
       {/* Footer with Compliance & Citations */}
-      <footer className="bg-white border-t border-slate-200 py-6 text-xs text-slate-500">
+      <footer className="bg-white border-t border-slate-200 py-6 text-xs text-slate-500 mb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="font-bold text-slate-800">Educaro European AI Applicant Journey & Forensic Gateway</div>
@@ -179,7 +299,7 @@ const MainApp: React.FC = () => {
           </div>
 
           <div className="text-[11px] text-slate-400">
-            Powered by 100% Open-Source Engines: Tesseract.js OCR, WebRTC, Web Audio API, Web Speech API, NestJS, React TypeScript, Prisma ORM, Tailwind CSS.
+            Powered by 100% Open-Source Engines: Tesseract.js OCR, WebRTC, Web Audio API, Web Speech API, NestJS, React TypeScript, IndexedDB, Tailwind CSS.
           </div>
         </div>
       </footer>

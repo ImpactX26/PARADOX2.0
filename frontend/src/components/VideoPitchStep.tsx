@@ -117,8 +117,54 @@ export const VideoPitchStep: React.FC<VideoPitchStepProps> = ({
     setHasMediaAccess(false);
   };
 
+  // Bind active MediaStream directly to video element via useEffect to eliminate camera lag
+  useEffect(() => {
+    if (videoRef.current && mediaStreamRef.current && hasMediaAccess) {
+      if (videoRef.current.srcObject !== mediaStreamRef.current) {
+        videoRef.current.srcObject = mediaStreamRef.current;
+        videoRef.current.play().catch(() => {});
+      }
+    }
+  }, [hasMediaAccess, activePitchTab]);
+
   /**
-   * Request real hardware camera and microphone access
+   * Hardware Presence Gatekeeper: Verifies live video and audio streams
+   */
+  const verifyHardwarePresence = (stream: MediaStream): boolean => {
+    const videoTracks = stream.getVideoTracks();
+    const audioTracks = stream.getAudioTracks();
+
+    if (videoTracks.length === 0 || audioTracks.length === 0) {
+      setHardwareError('⚠️ HARDWARE CHECK FAILED: Live video and microphone input required');
+      return false;
+    }
+
+    const vTrack = videoTracks[0];
+    const aTrack = audioTracks[0];
+
+    if (!vTrack.enabled || vTrack.muted || vTrack.readyState !== 'live') {
+      setHardwareError('⚠️ HARDWARE CHECK FAILED: Live video and microphone input required (camera track inactive or muted)');
+      return false;
+    }
+    if (!aTrack.enabled || aTrack.muted || aTrack.readyState !== 'live') {
+      setHardwareError('⚠️ HARDWARE CHECK FAILED: Live video and microphone input required (microphone track inactive or muted)');
+      return false;
+    }
+
+    // Attach trackended listeners
+    vTrack.onended = () => {
+      setHardwareError('⚠️ HARDWARE CHECK FAILED: Live video and microphone input required (camera disconnected)');
+      setHasMediaAccess(false);
+    };
+    aTrack.onended = () => {
+      setHardwareError('⚠️ HARDWARE CHECK FAILED: Live video and microphone input required (microphone disconnected)');
+    };
+
+    return true;
+  };
+
+  /**
+   * Request real hardware camera and microphone access with optimal constraints
    */
   const handleEnableCamera = async () => {
     setHardwareError(null);
@@ -127,10 +173,21 @@ export const VideoPitchStep: React.FC<VideoPitchStepProps> = ({
         throw new Error('Your browser does not support WebRTC mediaDevices API.');
       }
 
+      // Optimal stream constraints to avoid lag: 640x480 at 30fps
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480, facingMode: 'user' },
+        video: { 
+          width: { ideal: 640 }, 
+          height: { ideal: 480 }, 
+          frameRate: { ideal: 30 } 
+        },
         audio: true,
       });
+
+      if (!verifyHardwarePresence(stream)) {
+        stream.getTracks().forEach(t => t.stop());
+        setHasMediaAccess(false);
+        return;
+      }
 
       mediaStreamRef.current = stream;
       if (videoRef.current) {
@@ -143,13 +200,13 @@ export const VideoPitchStep: React.FC<VideoPitchStepProps> = ({
       setupWebAudio(stream);
     } catch (err: any) {
       console.error('Camera/Mic access error:', err);
-      let errorMsg = 'Could not access camera or microphone.';
+      let errorMsg = '⚠️ HARDWARE CHECK FAILED: Live video and microphone input required';
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        errorMsg = 'Camera and microphone permissions were denied. Please grant permission in your browser address bar.';
+        errorMsg = '⚠️ HARDWARE CHECK FAILED: Camera and microphone permissions were denied. Please grant permission in your browser.';
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        errorMsg = 'No camera or microphone hardware found on this system.';
+        errorMsg = '⚠️ HARDWARE CHECK FAILED: No webcam or microphone hardware detected on this machine.';
       } else {
-        errorMsg = `Media error: ${err.message || 'Unknown device error'}. You can still use speech-to-text or manual pitch input.`;
+        errorMsg = `⚠️ HARDWARE CHECK FAILED: ${err.message || 'Live video and microphone input required'}`;
       }
       setHardwareError(errorMsg);
       setHasMediaAccess(false);
@@ -289,7 +346,7 @@ export const VideoPitchStep: React.FC<VideoPitchStepProps> = ({
           runAuthenticityAnalysis(liveTranscript, volumeSamplesRef.current, recordingSeconds);
         };
 
-        recorder.start(250);
+        recorder.start(1000);
         mediaRecorderRef.current = recorder;
       } catch (e: any) {
         console.warn('MediaRecorder error:', e);
@@ -331,16 +388,8 @@ export const VideoPitchStep: React.FC<VideoPitchStepProps> = ({
       } catch (e) {}
     }
 
-    // Fallback transcript if silence or empty
-    if (!liveTranscript) {
-      const defaultSpoken = applicant.motivation?.pathway === 'STUDY'
-        ? `Guten Tag. My name is ${applicant.personal?.name || 'the candidate'}. I hold a degree in ${applicant.education?.fieldOfStudy || 'Engineering'} and my goal is to pursue my Master's studies at a public university in ${selectedCountry}.`
-        : applicant.motivation?.pathway === 'AUSBILDUNG'
-        ? `Hallo, ich bin ${applicant.personal?.name || 'die Bewerberin'}. Ich habe Deutsch gelernt und bewerbe mich für die Duale Ausbildung in ${selectedCountry}, um praxisnah zu lernen.`
-        : `Hello, my name is ${applicant.personal?.name || 'the applicant'}. I have verified engineering experience and qualify for the German Chancenkarte Opportunity Card.`;
-      setLiveTranscript(defaultSpoken);
-      runAuthenticityAnalysis(defaultSpoken, volumeSamplesRef.current, 15);
-    }
+    // Run analysis on actual captured speech without mock injections
+    runAuthenticityAnalysis(liveTranscript, volumeSamplesRef.current, recordingSeconds || 10);
   };
 
   /**
@@ -372,7 +421,24 @@ export const VideoPitchStep: React.FC<VideoPitchStepProps> = ({
     // 2. Metrics: Words & Pace
     const words = text.trim().split(/\s+/).filter(Boolean);
     const wordCount = words.length;
-    const wordsPerMinute = Math.round((wordCount / (duration / 60)));
+    const wordsPerMinute = duration > 0 ? Math.round((wordCount / (duration / 60))) : 0;
+
+    if (wordCount === 0) {
+      setAnalysisResult({
+        score: 15,
+        verdict: 'SUSPICIOUS / NO HUMAN SPEECH DETECTED',
+        verdictColor: 'rose',
+        humanVoiceDetected: false,
+        rmsVolumeVariance: Math.round(rmsVariance * 10) / 10,
+        silenceRatio: silenceRatio || 100,
+        wordCount: 0,
+        wordsPerMinute: 0,
+        detectedLanguage: 'Uncertain',
+        coherentKeywords: [],
+        rationale: 'No human speech or linguistic tokens captured during the recording session. Please ensure your microphone is enabled.',
+      });
+      return;
+    }
 
     // 3. Language detection
     const germanKeywords = ['ich', 'mein', 'name', 'deutschland', 'ausbildung', 'studium', 'hallo', 'guten', 'tag', 'beruf', 'karriere', 'jahr', 'danke'];

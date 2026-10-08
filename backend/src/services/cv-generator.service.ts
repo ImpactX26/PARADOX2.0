@@ -4,25 +4,44 @@ import { ApplicantRecord } from '../store/applicant.store';
 @Injectable()
 export class CvGeneratorService {
   /**
-   * Generates a DIN 5008 compliant, standardized German Tabellarischer Lebenslauf HTML document
+  /**
+   * Generates a DIN 5008 / Europass compliant, standardized German or English CV HTML document
    */
-  public generateLebenslaufHtml(applicant: ApplicantRecord): string {
+  public generateLebenslaufHtml(applicant: ApplicantRecord, lang: string = 'de'): string {
+    const isEn = lang === 'en';
     const personal = applicant.personal;
     const education = applicant.education;
     const employment = applicant.employment;
     const languages = applicant.languages;
     const skills = applicant.skills;
 
+    const t = {
+      docTitle: isEn ? `Curriculum Vitae - ${personal.name || 'Applicant'}` : `Tabellarischer Lebenslauf - ${personal.name || 'Bewerber'}`,
+      subtitle: isEn ? 'Application for Higher Education & Skilled Immigration (Germany / Austria)' : 'Bewerbung für Bildung & Beschäftigung in Deutschland / Österreich',
+      personalData: isEn ? 'Personal Information' : 'Persönliche Daten',
+      nameLabel: isEn ? 'Full Legal Name' : 'Name',
+      birthLabel: isEn ? 'Birth Year' : 'Geburtsjahrgang',
+      natLabel: isEn ? 'Nationality' : 'Staatsangehörigkeit',
+      eduTitle: isEn ? 'Education & Academic Qualifications' : 'Schul- & Hochschulausbildung',
+      expTitle: isEn ? 'Professional Work Experience' : 'Berufliche Praxis & Praktika',
+      langTitle: isEn ? 'Language Proficiencies (CEFR)' : 'Sprachkenntnisse (GER)',
+      skillsTitle: isEn ? 'Core Technical Skills & Tools' : 'Fachliche Kompetenzen',
+      verified: isEn ? '✓ Officially Verified' : '✓ Amtlich verifiziert (Official)',
+      selfReported: isEn ? 'Self-Reported Claim' : 'Angabe des Bewerbers',
+      footerLeft: isEn ? 'Generated in compliance with DIN 5008 & Europass standards • Educaro Germany' : 'Erstellt nach DIN 5008 Standard • Educaro Deutschland GmbH',
+      footerRight: isEn ? 'Digital Document Dossier' : 'Elektronisches Bewerbungsdossier',
+    };
+
     const formattedDob = personal.age ? `${2026 - personal.age} (Age: ${personal.age})` : 'Not specified';
     const verifiedBadge = (isVerified: boolean) => isVerified
-      ? `<span style="display:inline-block;background-color:#d1fae5;color:#065f46;font-size:11px;font-weight:600;padding:2px 8px;border-radius:9999px;margin-left:6px;">✓ Amtlich verifiziert (Official)</span>`
-      : `<span style="display:inline-block;background-color:#fef3c7;color:#92400e;font-size:11px;font-weight:600;padding:2px 8px;border-radius:9999px;margin-left:6px;">Angabe des Bewerbers</span>`;
+      ? `<span style="display:inline-block;background-color:#d1fae5;color:#065f46;font-size:11px;font-weight:600;padding:2px 8px;border-radius:9999px;margin-left:6px;">${t.verified}</span>`
+      : `<span style="display:inline-block;background-color:#fef3c7;color:#92400e;font-size:11px;font-weight:600;padding:2px 8px;border-radius:9999px;margin-left:6px;">${t.selfReported}</span>`;
 
     return `<!DOCTYPE html>
-<html lang="de">
+<html lang="${isEn ? 'en' : 'de'}">
 <head>
   <meta charset="UTF-8">
-  <title>Tabellarischer Lebenslauf - ${personal.name || 'Bewerber'}</title>
+  <title>${t.docTitle}</title>
   <style>
     @page { size: A4; margin: 20mm; }
     body {
@@ -115,7 +134,7 @@ export class CvGeneratorService {
   <div class="header">
     <div>
       <h1>${personal.name || 'Vorname Nachname'}</h1>
-      <div class="subtitle">Bewerbung für Bildung & Beschäftigung in Deutschland / Österreich</div>
+      <div class="subtitle">${t.subtitle}</div>
     </div>
     <div style="text-align: right; font-size: 12px; color: #475569;">
       <div>${personal.email || 'email@example.com'}</div>
@@ -124,27 +143,27 @@ export class CvGeneratorService {
     </div>
   </div>
 
-  <div class="section-title">Persönliche Daten</div>
+  <div class="section-title">${t.personalData}</div>
   <table class="entry-table">
     <tr>
-      <td class="col-date">Name</td>
+      <td class="col-date">${t.nameLabel}</td>
       <td class="col-content"><strong>${personal.name || 'Kandidat'}</strong></td>
     </tr>
     <tr>
-      <td class="col-date">Geburtsjahrgang</td>
+      <td class="col-date">${t.birthLabel}</td>
       <td class="col-content">${formattedDob}</td>
     </tr>
     <tr>
-      <td class="col-date">Staatsangehörigkeit</td>
+      <td class="col-date">${t.natLabel}</td>
       <td class="col-content">${personal.countryOfOrigin || 'Indisch'}</td>
     </tr>
     <tr>
-      <td class="col-date">Zielprogramm</td>
+      <td class="col-date">${isEn ? 'Target Program' : 'Zielprogramm'}</td>
       <td class="col-content">${applicant.motivation.pathway || 'Akademisches Studium'} in ${personal.targetCountry || 'Deutschland'}</td>
     </tr>
   </table>
 
-  <div class="section-title">Akademische Ausbildung</div>
+  <div class="section-title">${t.eduTitle}</div>
   <table class="entry-table">
     <tr>
       <td class="col-date">${education.graduationYear ? education.graduationYear - 4 + ' - ' + education.graduationYear : 'Abschluss'}</td>
@@ -153,15 +172,15 @@ export class CvGeneratorService {
         ${verifiedBadge(education.isVerified)}
         <br>
         <span>${education.institution || 'Universität'}</span>
-        ${education.grade ? `<br><span style="color:#0369a1; font-weight: 500;">Originalnote: ${education.grade} ${education.germanGrade ? '| Deutsche Note (Bayerische Formel): ' + education.germanGrade.toFixed(2) : ''}</span>` : ''}
+        ${education.grade ? `<br><span style="color:#0369a1; font-weight: 500;">Original: ${education.grade} ${education.germanGrade ? '| German GPA (Bavarian Formula): ' + education.germanGrade.toFixed(2) : ''}</span>` : ''}
       </td>
     </tr>
   </table>
 
-  <div class="section-title">Berufliche Praxis & Erfahrung</div>
+  <div class="section-title">${t.expTitle}</div>
   <table class="entry-table">
     <tr>
-      <td class="col-date">${employment.durationMonths ? Math.round(employment.durationMonths / 12) + ' Jahre Praxis' : 'Berufserfahrung'}</td>
+      <td class="col-date">${employment.durationMonths ? Math.round(employment.durationMonths / 12) + (isEn ? ' Yrs Experience' : ' Jahre Praxis') : (isEn ? 'Experience' : 'Berufserfahrung')}</td>
       <td class="col-content">
         <strong>${employment.role || 'Fachkraft / Spezialist'}</strong>
         ${verifiedBadge(employment.isVerified)}
@@ -172,38 +191,38 @@ export class CvGeneratorService {
     </tr>
   </table>
 
-  <div class="section-title">Sprachkenntnisse (GER / CEFR)</div>
+  <div class="section-title">${t.langTitle}</div>
   <table class="entry-table">
     ${languages.length > 0 ? languages.map(l => `
       <tr>
         <td class="col-date">${l.language}</td>
         <td class="col-content">
-          <strong>Niveau ${l.level}</strong> ${l.certificateType ? '(' + l.certificateType + ')' : ''}
+          <strong>${isEn ? 'Level ' : 'Niveau '}${l.level}</strong> ${l.certificateType ? '(' + l.certificateType + ')' : ''}
           ${verifiedBadge(l.isVerified)}
         </td>
       </tr>
     `).join('') : `
       <tr>
         <td class="col-date">Deutsch</td>
-        <td class="col-content">In Vorbereitung / Grundkenntnisse</td>
+        <td class="col-content">${isEn ? 'In preparation / Basic' : 'In Vorbereitung / Grundkenntnisse'}</td>
       </tr>
       <tr>
         <td class="col-date">Englisch</td>
-        <td class="col-content">Fließend in Wort und Schrift (C1)</td>
+        <td class="col-content">${isEn ? 'Fluent (C1)' : 'Fließend in Wort und Schrift (C1)'}</td>
       </tr>
     `}
   </table>
 
-  <div class="section-title">Kenntnisse & Qualifikationen</div>
+  <div class="section-title">${t.skillsTitle}</div>
   <div style="font-size: 13px; margin-bottom: 20px;">
     <div class="skills-badges">
-      ${skills.length > 0 ? skills.map(s => `<span class="badge">${s}</span>`).join('') : '<span class="badge">Teamfähigkeit</span><span class="badge">Interkulturelle Kompetenz</span><span class="badge">Analytisches Denken</span>'}
+      ${skills.length > 0 ? skills.map(s => `<span class="badge">${s}</span>`).join('') : '<span class="badge">Problem Solving</span><span class="badge">Intercultural Competence</span><span class="badge">Analytical Thinking</span>'}
     </div>
   </div>
 
   <div class="footer">
-    <div>Ort, Datum: ${personal.city || 'Frankfurt am Main'}, den ${new Date().toLocaleDateString('de-DE')}</div>
-    <div style="border-top: 1px dotted #94a3b8; width: 160px; text-align: center; padding-top: 4px;">Unterschrift</div>
+    <div>${isEn ? 'Location, Date: ' : 'Ort, Datum: '}${personal.city || 'Frankfurt am Main'}, ${new Date().toLocaleDateString(isEn ? 'en-US' : 'de-DE')}</div>
+    <div style="border-top: 1px dotted #94a3b8; width: 160px; text-align: center; padding-top: 4px;">${isEn ? 'Signature' : 'Unterschrift'}</div>
   </div>
 
 </body>

@@ -37,16 +37,17 @@ export const createBlankApplicant = (id?: string, name?: string, pathway?: 'STUD
       name: name || '',
       email: '',
       phone: '',
-      age: 24,
+      age: 0,
       city: '',
       countryOfOrigin: 'India',
       targetCountry: 'Germany',
+      professionalProfileUrl: '',
     },
     education: {
       degree: '',
       institution: '',
       fieldOfStudy: '',
-      graduationYear: new Date().getFullYear(),
+      graduationYear: 0,
       grade: '',
       germanGrade: undefined,
       isVerified: false,
@@ -67,11 +68,12 @@ export const createBlankApplicant = (id?: string, name?: string, pathway?: 'STUD
       pathway: pathway || 'STUDY',
       goals: '',
       relocationReason: '',
+      targetAusbildungTrade: '',
     },
     media: {
       videoPitchTranscript: '',
       communicationRating: 0,
-      analysisSummary: 'No media recorded yet.',
+      analysisSummary: '',
     },
     qualification: {
       chancenkartePoints: 0,
@@ -88,6 +90,7 @@ export const createBlankApplicant = (id?: string, name?: string, pathway?: 'STUD
       estimatedTimelineMonths: 6,
       nextSteps: ['Complete personal profile', 'Upload educational degree or language certificate'],
     },
+    universityShortlist: [],
   };
 };
 

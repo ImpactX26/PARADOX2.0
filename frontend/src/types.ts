@@ -6,6 +6,9 @@ export interface ApplicantPersonal {
   city: string;
   countryOfOrigin: string;
   targetCountry: string; // 'Germany' | 'Austria'
+  professionalProfileUrl?: string;
+  profileAuthenticityScore?: number;
+  profileAuthenticityStatus?: 'VERIFIED_HIGH' | 'MODERATE' | 'UNVERIFIED' | 'AUTHENTIC' | 'SUSPECT';
 }
 
 export interface ApplicantEducation {
@@ -62,6 +65,7 @@ export interface ApplicantMotivation {
   pathway: 'STUDY' | 'AUSBILDUNG' | 'CHANCENKARTE';
   goals: string;
   relocationReason: string;
+  targetAusbildungTrade?: string;
 }
 
 export interface GermanCefrScore {
@@ -148,6 +152,11 @@ export interface ApplicantRecord {
   media: ApplicantMedia;
   qualification: ApplicantQualification;
   recommendedJourney: RecommendedJourney;
+  universityShortlist?: string[];
+  targetAusbildungTrade?: string;
+  chancenkartePoints?: number;
+  timelineAudit?: TimelineAuditResult;
+  identityCrossCheck?: IdentityCrossCheckReport;
 }
 
 export interface UniversityMatchResult {
@@ -198,6 +207,7 @@ export interface ExtractedCVData {
   name?: string;
   email?: string;
   phone?: string;
+  dateOfBirth?: string;
   city?: string;
   degree?: string;
   institution?: string;
@@ -212,4 +222,80 @@ export interface ExtractedCVData {
   skills?: string[];
   rawText: string;
 }
+
+export interface TimelineMilestone {
+  title: string;
+  year: number;
+  month?: number;
+  category: 'BIRTH' | 'SECONDARY' | 'HIGHER_SECONDARY' | 'BACHELOR_START' | 'BACHELOR_GRADUATION' | 'EMPLOYMENT_START' | 'EMPLOYMENT_END' | 'TARGET_INTAKE';
+  description: string;
+  sourceDoc?: string;
+  isVerified: boolean;
+}
+
+export interface TimelineAuditResult {
+  birthYear?: number;
+  highSchoolPassingYear?: number;
+  bachelorStartYear?: number;
+  bachelorGraduationYear?: number;
+  employmentStartYear?: number;
+  employmentDurationMonths?: number;
+  ageAtGraduation?: number;
+  gapMonths: number;
+  unexplainedGapDetected: boolean;
+  feasibilityViolations: string[];
+  advisoryAlerts: string[];
+  milestones: TimelineMilestone[];
+}
+
+export interface CrossDocumentIdentityMatch {
+  documentId: string;
+  fileName: string;
+  extractedName: string;
+  normalizedName: string;
+  similarityScore: number; // 0 to 100
+  matchStatus: 'EXACT_MATCH' | 'MINOR_VARIANCE' | 'CRITICAL_MISMATCH';
+  notes: string;
+}
+
+export interface IdentityCrossCheckReport {
+  primaryName: string;
+  overallMatchScore: number;
+  overallStatus: 'VERIFIED' | 'MINOR_VARIANCE' | 'CRITICAL_FRAUD';
+  documentMatches: CrossDocumentIdentityMatch[];
+  warningMessage?: string;
+}
+
+export interface AdmissionsConsultantReportData {
+  originalCgpa: string;
+  convertedGermanGpa: number;
+  gradeBracket: {
+    germanTitle: string;
+    englishTitle: string;
+    description: string;
+    targetUniversities: string;
+  };
+  apsGatekeeper: {
+    required: boolean;
+    status: 'VERIFIED' | 'PENDING' | 'EXEMPT';
+    message: string;
+    actionLabel: string;
+  };
+  ectsAlignment: {
+    isConsecutiveMatch: boolean;
+    branchSwitchDetected: boolean;
+    sourceField: string;
+    targetField: string;
+    compatibilityNotes: string;
+  };
+  admissionProbability: 'High Match (Public Tuition-Free)' | 'Moderate Match' | 'Bridge Program / Preparatory Needed';
+  identifiedVulnerabilities: string[];
+  strategicActionPlan: Array<{
+    step: number;
+    title: string;
+    description: string;
+    timing: string;
+  }>;
+}
+
 
