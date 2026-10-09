@@ -1,8 +1,8 @@
 [
   {
-    "id": "app_1791504184402_tqqwm",
-    "createdAt": "2026-10-09T00:03:04.402Z",
-    "updatedAt": "2026-10-09T00:03:04.402Z",
+    "id": "app_1791515978403_irizf",
+    "createdAt": "2026-10-09T03:19:38.403Z",
+    "updatedAt": "2026-10-09T03:19:38.403Z",
     "personal": {
       "name": "",
       "email": "",
@@ -63,88 +63,38 @@
   },
   {
     "id": "persona_rahul-chancenkarte_1791487236539",
-    "createdAt": "2026-10-09T00:03:06.253Z",
-    "updatedAt": "2026-10-09T00:48:58.600Z",
+    "createdAt": "2026-10-09T03:20:45.642Z",
+    "updatedAt": "2026-10-09T03:28:24.181Z",
     "personal": {
-      "name": "AARAV SHARMA",
-      "email": "aarav.sharma@example.edu",
-      "phone": "98765 4321",
-      "age": 24,
-      "city": "Bengaluru",
+      "name": "",
+      "email": "",
+      "phone": "",
+      "age": 0,
+      "city": "",
       "countryOfOrigin": "India",
       "targetCountry": "Germany",
-      "professionalProfileUrl": "",
-      "profileAuthenticityScore": 0,
-      "profileAuthenticityStatus": "UNVERIFIED"
+      "professionalProfileUrl": ""
     },
     "education": {
-      "degree": "B.Tech",
-      "institution": "National Institute of Technology",
-      "fieldOfStudy": "Computer Science",
-      "graduationYear": 2023,
-      "grade": "8.85 / 10",
-      "germanGrade": 1.57,
-      "isVerified": true,
-      "provenance": "Verified from Document"
+      "degree": "",
+      "institution": "",
+      "fieldOfStudy": "",
+      "graduationYear": 0,
+      "grade": "",
+      "isVerified": false,
+      "provenance": "Applicant-Provided Claim"
     },
     "employment": {
-      "employer": "Technology Solutions Pvt Ltd",
-      "role": "Senior Software Engineer",
-      "durationMonths": 24,
-      "responsibilities": "Professional practice in Senior Software Engineer.",
-      "isVerified": true,
-      "provenance": "Verified from Document"
+      "employer": "",
+      "role": "",
+      "durationMonths": 0,
+      "responsibilities": "",
+      "isVerified": false,
+      "provenance": "Applicant-Provided Claim"
     },
-    "skills": [
-      "JavaScript",
-      "Python",
-      "Java",
-      "C++",
-      "Go",
-      "React",
-      "Docker",
-      "PostgreSQL",
-      "SQL",
-      "Git",
-      "Linux",
-      "Machine Learning",
-      "ICU",
-      "CAD"
-    ],
+    "skills": [],
     "languages": [],
-    "documents": [
-      {
-        "id": "doc_1791504254572_hkvh",
-        "fileName": "images.jpg",
-        "extractedText": "= [\n~~\n—\n",
-        "authenticityStatus": "UNVERIFIED",
-        "confidenceScore": 58,
-        "tamperAlerts": [
-          "No recognized institutional seal or Controller signature keywords detected.",
-          "Low text density: Document exhibits sparse character count or high compression artifacting."
-        ],
-        "isVerified": false,
-        "provenanceTag": "Applicant-Provided Claim",
-        "extractedFields": {},
-        "createdAt": "2026-10-09T00:04:14.572Z"
-      },
-      {
-        "id": "doc_1791504278851_zbhd",
-        "fileName": "Certificate1328129.jpg",
-        "extractedText": "TY f Achiegg,,\n\nI This certificate is presented to I\nfl For successfully completing the course of study for Bachelor of I\nScience as prescribed by the Board of Education\nPresented this 6th Day of December, 2018\nJohn Mike Doe Diana Suicer\n\nChief Executive Officer Director of Human Resources\n",
-        "authenticityStatus": "AUTHENTIC",
-        "confidenceScore": 73,
-        "tamperAlerts": [
-          "No recognized institutional seal or Controller signature keywords detected."
-        ],
-        "isVerified": true,
-        "provenanceTag": "Verified from Document",
-        "extractedFields": {
-          "year": 2018
-        },
-        "createdAt": "2026-10-09T00:04:38.851Z"
-      }
-    ],
+    "documents": [],
     "motivation": {
       "pathway": "STUDY",
       "goals": "",
@@ -152,74 +102,33 @@
       "targetAusbildungTrade": ""
     },
     "media": {
-      "videoPitchTranscript": "hallo hallo hallo  hallo",
-      "communicationRating": 5,
-      "analysisSummary": "Spoken motivation is partially articulated (4 words). Rehearse mentioning your specific field of study or German language level.",
-      "integrityTrustScore": 100,
-      "proctoringSummary": {
-        "yawPitchStatus": "🟢 Optimal Center Frame",
-        "voiceSyncStatus": "🟡 WARNING: Muted / Unsynchronized speech",
-        "infractionsCount": 0,
-        "tabSwitches": 0,
-        "lookingAwaySeconds": 0,
-        "overallTrustLevel": "High Trust",
-        "infractionLog": []
-      },
-      "germanCefrAssessment": {
-        "assessedLevel": "A1",
-        "typeTokenRatio": 25,
-        "grammaticalComplexity": 0,
-        "spokenFluencyWpm": 80,
-        "a1MarkersCount": 2,
-        "a2MarkersCount": 0,
-        "b1MarkersCount": 0,
-        "b2MarkersCount": 0,
-        "feedback": [
-          "✓ Clear basic introduction and essential greetings.",
-          "💡 Next step for A2: Connect ideas using modal verbs (\"Ich möchte in Deutschland arbeiten\") and coordinating conjunctions.",
-          "⏱ Cadence: 80 WPM (ideal German conversational velocity)."
-        ]
-      },
-      "writtenEvaluation": {
-        "motivationScore": 40,
-        "professionalFitScore": 0,
-        "financialCulturalScore": 0,
-        "overallCoherenceScore": 19,
-        "lixIndex": 39,
-        "typeTokenRatio": 100,
-        "detectedKeywords": [],
-        "feedbackPills": [
-          "💡 Add specific institutional focus (e.g. DAAD ranking, TU9 excellence)"
-        ],
-        "answers": {
-          "motivation": "More employment oppertunities and better income",
-          "professionalFit": "",
-          "financialCultural": ""
-        }
-      }
+      "videoPitchTranscript": "",
+      "communicationRating": 0,
+      "analysisSummary": "No media uploaded yet."
     },
     "qualification": {
-      "chancenkartePoints": 8,
-      "austriaPoints": 55,
+      "chancenkartePoints": 2,
+      "austriaPoints": 20,
       "apsRequired": true,
       "apsStatus": "REQUIRED",
       "status": "CONDITIONAL",
       "missingRequirements": [
         "Mandatory German Embassy India APS Certificate (Akademische Prüfstelle) verification required.",
+        "Higher Secondary or Bachelor graduation transcript required for University admission.",
         "University Minimum Language: IELTS >= 6.5 or German B2 certificate."
       ],
       "pointsBreakdown": [
         {
           "category": "Recognized Academic Degree",
-          "points": 4,
+          "points": 0,
           "maxPoints": 4,
-          "reason": "Recognized qualification: B.Tech"
+          "reason": "No recognized university degree detected"
         },
         {
           "category": "Professional Experience",
-          "points": 2,
+          "points": 0,
           "maxPoints": 3,
-          "reason": "2.0 years experience (2 to 5 years bracket)"
+          "reason": "Less than 2 years recognized experience"
         },
         {
           "category": "Language Skills (CEFR)",
@@ -231,7 +140,7 @@
           "category": "Age Factor",
           "points": 2,
           "maxPoints": 2,
-          "reason": "Age 24 (< 35 years gives maximum 2 pts)"
+          "reason": "Age 25 (< 35 years gives maximum 2 pts)"
         }
       ]
     },
@@ -243,92 +152,6 @@
         "Verify Degree Transcripts via APS India",
         "Apply to 3 matched German public universities via Uni-Assist",
         "Set up €11,904 blocked account with statutory health insurance"
-      ]
-    },
-    "timelineAudit": {
-      "birthYear": 2002,
-      "highSchoolPassingYear": 2014,
-      "bachelorStartYear": 2014,
-      "bachelorGraduationYear": 2018,
-      "employmentStartYear": 2024,
-      "employmentDurationMonths": 24,
-      "ageAtGraduation": 16,
-      "gapMonths": 76,
-      "unexplainedGapDetected": true,
-      "feasibilityViolations": [
-        "CHRONOLOGICAL ANOMALY: Calculated age at Bachelor graduation is 16 (Born 2002, Graduated 2018). German standard minimum graduation age is 20-21."
-      ],
-      "advisoryAlerts": [
-        "⚠️ UNEXPLAINED GAP OF 76 MONTHS: German Embassy mandates an official Gap Explanation Letter and experiential proof."
-      ],
-      "milestones": [
-        {
-          "title": "Birth Year",
-          "year": 2002,
-          "category": "BIRTH",
-          "description": "Born 2002 (India)",
-          "isVerified": true
-        },
-        {
-          "title": "Higher Secondary (12th Grade / Abitur Eq.)",
-          "year": 2014,
-          "category": "HIGHER_SECONDARY",
-          "description": "Completed 10+2 Secondary Education qualifying for German University Entrance (HZB).",
-          "isVerified": true
-        },
-        {
-          "title": "Commenced Higher Education",
-          "year": 2014,
-          "category": "BACHELOR_START",
-          "description": "Enrolled in B.Tech at National Institute of Technology.",
-          "isVerified": true
-        },
-        {
-          "title": "Bachelor Degree Awarded",
-          "year": 2018,
-          "category": "BACHELOR_GRADUATION",
-          "description": "Conferred B.Tech with CGPA 8.85 / 10.",
-          "isVerified": true
-        },
-        {
-          "title": "Professional Employment",
-          "year": 2024,
-          "category": "EMPLOYMENT_START",
-          "description": "Senior Software Engineer at Technology Solutions Pvt Ltd (2 years).",
-          "isVerified": true
-        },
-        {
-          "title": "Target Germany Intake",
-          "year": 2026,
-          "category": "TARGET_INTAKE",
-          "description": "Planned Departure: Winter Semester 2026 / 2027 (STUDY).",
-          "isVerified": true
-        }
-      ]
-    },
-    "identityCrossCheck": {
-      "primaryName": "AARAV SHARMA",
-      "overallMatchScore": 100,
-      "overallStatus": "VERIFIED",
-      "documentMatches": [
-        {
-          "documentId": "doc_1791504254572_hkvh",
-          "fileName": "images.jpg",
-          "extractedName": "AARAV SHARMA",
-          "normalizedName": "AARAV SHARMA",
-          "similarityScore": 100,
-          "matchStatus": "EXACT_MATCH",
-          "notes": "🟢 NAME VERIFIED: Exact Match Across Academic Records"
-        },
-        {
-          "documentId": "doc_1791504278851_zbhd",
-          "fileName": "Certificate1328129.jpg",
-          "extractedName": "AARAV SHARMA",
-          "normalizedName": "AARAV SHARMA",
-          "similarityScore": 100,
-          "matchStatus": "EXACT_MATCH",
-          "notes": "🟢 NAME VERIFIED: Exact Match Across Academic Records"
-        }
       ]
     }
   }

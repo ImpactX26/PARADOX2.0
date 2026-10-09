@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Navbar } from './components/Navbar';
-import { LandingView } from './components/LandingView';
+import { PathwaySelector, DegreeLevel, GeographicRegion } from './components/PathwaySelector';
+import { UniversityWorkspace } from './components/UniversityWorkspace';
+import { AusbildungWorkspace } from './components/AusbildungWorkspace';
+import { EmploymentWorkspace } from './components/EmploymentWorkspace';
 import { Wizard } from './components/Wizard';
 import { UniversityRanker } from './components/UniversityRanker';
 import { AusbildungPortal } from './components/AusbildungPortal';
@@ -22,6 +25,12 @@ const MainApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('landing');
   const [cvBrochureSubTab, setCvBrochureSubTab] = useState<'cv' | 'brochure'>('cv');
   const [notification, setNotification] = useState<string | null>(null);
+
+  // Pathway-specific Level and Region State
+  const [universityLevel, setUniversityLevel] = useState<DegreeLevel>('masters_phd');
+  const [universityRegion, setUniversityRegion] = useState<GeographicRegion>('germany');
+  const [ausbildungRegion, setAusbildungRegion] = useState<GeographicRegion>('germany');
+  const [employmentRegion, setEmploymentRegion] = useState<GeographicRegion>('germany');
 
   const {
     activeApplicant,
@@ -91,19 +100,6 @@ const MainApp: React.FC = () => {
     }
   };
 
-  const handlePathwaySelect = (pathway: 'STUDY' | 'AUSBILDUNG' | 'CHANCENKARTE') => {
-    if (pathway === 'STUDY') {
-      setActiveTab('journey');
-      showNotification('Selected Higher Education & UG Studies. Intake wizard active.');
-    } else if (pathway === 'AUSBILDUNG') {
-      setActiveTab('ausbildung');
-      showNotification('Selected Duale Ausbildung. Vocational portal active.');
-    } else if (pathway === 'CHANCENKARTE') {
-      setActiveTab('chancenkarte');
-      showNotification('Selected Chancenkarte (Opportunity Card). Calculator active.');
-    }
-  };
-
   return (
     <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col font-sans pb-16">
       {/* Toast Notification */}
@@ -135,11 +131,44 @@ const MainApp: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* 1. Opening Landing View */}
+            {/* 1. Root Pathway Entry Hero & Branching Modal View */}
             {activeTab === 'landing' && (
-              <LandingView
-                onSelectPathway={handlePathwaySelect}
-                onOpenUniversityExplorer={() => setActiveTab('ranker')}
+              <PathwaySelector
+                onSelectUniversity={(lvl, reg) => {
+                  setUniversityLevel(lvl);
+                  setUniversityRegion(reg);
+                  setActiveTab('university');
+                  handleUpdateProfile({
+                    motivation: {
+                      ...activeApplicant.motivation,
+                      pathway: 'STUDY',
+                    }
+                  });
+                  showNotification(`Opened University Workspace (${lvl === 'undergrad' ? 'Undergrad' : 'Masters'}, ${reg.toUpperCase()})`);
+                }}
+                onSelectAusbildung={(reg) => {
+                  setAusbildungRegion(reg);
+                  setActiveTab('ausbildung');
+                  handleUpdateProfile({
+                    motivation: {
+                      ...activeApplicant.motivation,
+                      pathway: 'AUSBILDUNG',
+                    }
+                  });
+                  showNotification(`Opened Duale Ausbildung Workspace (${reg.toUpperCase()})`);
+                }}
+                onSelectEmployment={(reg) => {
+                  setEmploymentRegion(reg);
+                  setActiveTab('employment');
+                  handleUpdateProfile({
+                    motivation: {
+                      ...activeApplicant.motivation,
+                      pathway: 'CHANCENKARTE',
+                    }
+                  });
+                  showNotification(`Opened Direct Employment Workspace (${reg.toUpperCase()})`);
+                }}
+                onOpenWizard={() => setActiveTab('journey')}
                 onOpenMockInterview={() => setActiveTab('interview')}
                 onOpenBrochure={() => setActiveTab('cv_brochure')}
                 onOpenAnabinCashflow={() => setActiveTab('anabin_cashflow')}
@@ -148,7 +177,38 @@ const MainApp: React.FC = () => {
               />
             )}
 
-            {/* 2. Applicant Journey Wizard */}
+            {/* 2. Higher Education Workspace (Segregated by Level & Region) */}
+            {activeTab === 'university' && (
+              <UniversityWorkspace
+                initialLevel={universityLevel}
+                initialRegion={universityRegion}
+                applicant={activeApplicant}
+                onUpdateApplicant={handleUpdateProfile}
+                onBackToSelector={() => setActiveTab('landing')}
+              />
+            )}
+
+            {/* 3. Duale Ausbildung & Work-Study Vocational Workspace */}
+            {activeTab === 'ausbildung' && (
+              <AusbildungWorkspace
+                initialRegion={ausbildungRegion}
+                applicant={activeApplicant}
+                onUpdateApplicant={handleUpdateProfile}
+                onBackToSelector={() => setActiveTab('landing')}
+              />
+            )}
+
+            {/* 4. Direct Employment & Pan-European Shortage Search Workspace */}
+            {(activeTab === 'employment' || activeTab === 'chancenkarte') && (
+              <EmploymentWorkspace
+                initialRegion={employmentRegion}
+                applicant={activeApplicant}
+                onUpdateApplicant={handleUpdateProfile}
+                onBackToSelector={() => setActiveTab('landing')}
+              />
+            )}
+
+            {/* 5. Applicant Journey Wizard (Forensic OCR & Document Verifier) */}
             {activeTab === 'journey' && (
               <Wizard
                 applicant={activeApplicant}
@@ -159,7 +219,7 @@ const MainApp: React.FC = () => {
               />
             )}
 
-            {/* 3. 420+ Universities & Bavarian GPA Cutoffs */}
+            {/* 6. 420+ Universities & Bavarian GPA Cutoffs */}
             {activeTab === 'ranker' && (
               <UniversityRanker
                 applicant={activeApplicant}
@@ -167,54 +227,21 @@ const MainApp: React.FC = () => {
               />
             )}
 
-            {/* 4. Duale Ausbildung Dedicated Deep-Dive Portal */}
-            {activeTab === 'ausbildung' && (
-              <div className="max-w-7xl mx-auto px-4 py-8">
-                <AusbildungPortal
-                  applicant={activeApplicant}
-                  onSelectTrade={(tradeName) => {
-                    handleUpdateProfile({
-                      targetAusbildungTrade: tradeName,
-                      motivation: {
-                        ...activeApplicant.motivation,
-                        pathway: 'AUSBILDUNG',
-                      },
-                    });
-                    showNotification(`Selected vocational trade: ${tradeName}`);
-                  }}
-                />
-              </div>
-            )}
-
-            {/* 5. Chancenkarte 6-Point Opportunity Card Portal */}
-            {activeTab === 'chancenkarte' && (
-              <div className="max-w-7xl mx-auto px-4 py-8">
-                <ChancenkartePortal
-                  applicant={activeApplicant}
-                  onUpdateQualification={(score) => {
-                    handleUpdateProfile({
-                      chancenkartePoints: score,
-                    });
-                  }}
-                />
-              </div>
-            )}
-
-            {/* 6. Anabin Classifier & Werkstudent Cashflow Simulator */}
+            {/* 7. Anabin Classifier & Werkstudent Cashflow Simulator */}
             {activeTab === 'anabin_cashflow' && (
               <div className="max-w-7xl mx-auto px-4 py-8">
                 <AnabinAndWerkstudentSuite applicant={activeApplicant} />
               </div>
             )}
 
-            {/* 7. dMAT Performance Evaluator & Funding Hub */}
+            {/* 8. dMAT Performance Evaluator & Funding Hub */}
             {activeTab === 'dmat_funding' && (
               <div className="max-w-7xl mx-auto px-4 py-8">
                 <StudentSuccessAndFundingSuite applicant={activeApplicant} />
               </div>
             )}
 
-            {/* 6. Contextual Mock Interview Simulator */}
+            {/* 9. Contextual Mock Interview Simulator */}
             {activeTab === 'interview' && (
               <div className="max-w-7xl mx-auto px-4 py-8">
                 <InterviewSimulator
@@ -224,7 +251,7 @@ const MainApp: React.FC = () => {
               </div>
             )}
 
-            {/* 7. Bilingual CV Generator & Candidate Roadmap Brochure */}
+            {/* 10. Bilingual CV Generator & Candidate Roadmap Brochure */}
             {activeTab === 'cv_brochure' && (
               <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
                 <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
@@ -273,19 +300,19 @@ const MainApp: React.FC = () => {
               </div>
             )}
 
-            {/* 8. Financial Calculator */}
+            {/* 11. Financial Calculator */}
             {activeTab === 'calculator' && (
               <FinancialCalculator />
             )}
 
-            {/* 9. Accredited Degree Directory */}
+            {/* 12. Accredited Degree Directory */}
             {activeTab === 'courses' && (
               <div className="max-w-7xl mx-auto px-4 py-8">
                 <CourseDirectory applicant={activeApplicant} />
               </div>
             )}
 
-            {/* 10. Counselor CRM */}
+            {/* 13. Counselor CRM */}
             {activeTab === 'crm' && (
               <CounselorCRM
                 onSelectApplicant={(selected) => {
@@ -311,7 +338,7 @@ const MainApp: React.FC = () => {
       <footer className="bg-white border-t border-slate-200 py-6 text-xs text-slate-500 mb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="font-bold text-slate-800">Educaro European AI Applicant Journey & Forensic Gateway</div>
+            <div className="font-bold text-slate-800">Educaro European AI Admissions & Employment Intelligence Platform</div>
             <div className="text-[11px] text-slate-400">
               IMPACTX '26 Hackathon • Agentic AI Track • Educaro Deutschland GmbH
             </div>

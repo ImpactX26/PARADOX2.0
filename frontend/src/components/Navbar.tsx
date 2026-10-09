@@ -201,27 +201,15 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
 
         <button
-          onClick={() => setActiveTab('journey')}
+          onClick={() => setActiveTab('university')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-            activeTab === 'journey'
+            activeTab === 'university'
               ? 'bg-blue-50 text-blue-700 border border-blue-200/80 shadow-2xs font-bold'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
           }`}
         >
-          <Compass className="w-3.5 h-3.5 text-blue-600" />
-          <span>🧭 Application Wizard</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('ranker')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-            activeTab === 'ranker'
-              ? 'bg-blue-50 text-blue-700 border border-blue-200/80 shadow-2xs font-bold'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-          }`}
-        >
-          <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
-          <span>🎓 420+ Universities & Cutoffs</span>
+          <GraduationCap className="w-3.5 h-3.5 text-blue-600" />
+          <span>🎓 University Admissions</span>
         </button>
 
         <button
@@ -233,19 +221,31 @@ export const Navbar: React.FC<NavbarProps> = ({
           }`}
         >
           <Briefcase className="w-3.5 h-3.5 text-emerald-600" />
-          <span>🏥 Duale Ausbildung Portal</span>
+          <span>🏥 Duale Ausbildung</span>
         </button>
 
         <button
-          onClick={() => setActiveTab('chancenkarte')}
+          onClick={() => setActiveTab('employment')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-            activeTab === 'chancenkarte'
+            activeTab === 'employment' || activeTab === 'chancenkarte'
               ? 'bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs font-bold'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
           }`}
         >
           <Compass className="w-3.5 h-3.5 text-amber-600" />
-          <span>💼 Chancenkarte Hub</span>
+          <span>💼 Direct Employment & Visas</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('journey')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+            activeTab === 'journey'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200/80 shadow-2xs font-bold'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5 text-sky-600" />
+          <span>🧭 Intake Wizard & OCR</span>
         </button>
 
         <button
