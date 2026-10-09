@@ -116,8 +116,13 @@ export interface ApplicantRecord {
   recommendedJourney: RecommendedJourney;
   timelineAudit?: any;
   identityCrossCheck?: any;
+  transcriptModules?: any[];
+  ectsMultiplier?: number;
+  dynamicMilestones?: any;
+  universityShortlist?: string[];
+  targetAusbildungTrade?: string;
+  chancenkartePoints?: number;
 }
-
 @Injectable()
 export class ApplicantStore {
   private readonly logger = new Logger(ApplicantStore.name);

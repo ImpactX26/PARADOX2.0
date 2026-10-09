@@ -9,7 +9,9 @@ import {
   AlertTriangle,
   Briefcase,
   FileText,
-  Home
+  Home,
+  Building2,
+  Award
 } from 'lucide-react';
 import { ApplicantRecord } from '../types';
 
@@ -83,7 +85,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title="Purge current applicant session and start a brand new blank intake"
           >
             <RotateCcw className="w-3.5 h-3.5 text-red-600" />
-            <span>↺ Start New Application / Clear</span>
+            <span>↺ Start New / Clear Profile</span>
           </button>
         </div>
       </div>
@@ -243,7 +245,31 @@ export const Navbar: React.FC<NavbarProps> = ({
           }`}
         >
           <Compass className="w-3.5 h-3.5 text-amber-600" />
-          <span>💼 Chancenkarte Calculator</span>
+          <span>💼 Chancenkarte Hub</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('anabin_cashflow')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+            activeTab === 'anabin_cashflow'
+              ? 'bg-indigo-50 text-indigo-800 border border-indigo-200/80 shadow-2xs font-bold'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+          }`}
+        >
+          <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+          <span>🏛️ Anabin & Cashflow</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('dmat_funding')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+            activeTab === 'dmat_funding'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-2xs font-bold'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+          }`}
+        >
+          <Award className="w-3.5 h-3.5 text-emerald-600" />
+          <span>🎯 dMAT & Funding Hub</span>
         </button>
 
         <button

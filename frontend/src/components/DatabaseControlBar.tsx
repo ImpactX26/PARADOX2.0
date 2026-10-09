@@ -108,9 +108,10 @@ export const DatabaseControlBar: React.FC<DatabaseControlBarProps> = ({
         <button
           onClick={handleManualSave}
           disabled={isSaving}
+          id="btn-save-snapshot"
           className={`px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-all ${
             saveSuccess
-              ? 'bg-emerald-600 text-white'
+              ? 'bg-emerald-600 text-white shadow-xs'
               : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 active:scale-95'
           }`}
           title="Save timestamped snapshot to local database"
@@ -118,32 +119,34 @@ export const DatabaseControlBar: React.FC<DatabaseControlBarProps> = ({
           {saveSuccess ? (
             <>
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Saved!</span>
+              <span>Snapshot Saved!</span>
             </>
           ) : (
             <>
               <Save className="w-3.5 h-3.5 text-sky-400" />
-              <span>Save Profile</span>
+              <span>💾 Save Snapshot</span>
             </>
           )}
         </button>
 
         <button
           onClick={handleExport}
-          className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95"
-          title="Download full candidate JSON dossier for jury evaluation"
+          id="btn-export-dossier"
+          className="px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95"
+          title="Download full candidate JSON dossier for jury inspection"
         >
-          <Download className="w-3.5 h-3.5" />
-          <span>Export JSON</span>
+          <Download className="w-3.5 h-3.5 text-white" />
+          <span>📥 Export Evaluator Dossier (JSON)</span>
         </button>
 
         <button
           onClick={handleReset}
-          className="px-3 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/80 font-semibold text-xs flex items-center gap-1.5 transition-all active:scale-95"
-          title="Purge all local storage and return to blank application"
+          id="btn-reset-all-data"
+          className="px-3 py-1.5 rounded-lg bg-rose-950/70 hover:bg-rose-900 text-rose-300 border border-rose-800 font-semibold text-xs flex items-center gap-1.5 transition-all active:scale-95"
+          title="Purge all local storage and return to landing screen"
         >
           <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-          <span>Reset / Clear All</span>
+          <span>🗑️ Reset All Data</span>
         </button>
       </div>
     </aside>

@@ -135,7 +135,7 @@ export const VideoPitchStep: React.FC<VideoPitchStepProps> = ({
     const audioTracks = stream.getAudioTracks();
 
     if (videoTracks.length === 0 || audioTracks.length === 0) {
-      setHardwareError('⚠️ HARDWARE CHECK FAILED: Live video and microphone input required');
+      setHardwareError('⚠️ LIVE VIDEO & AUDIO STREAM REQUIRED');
       return false;
     }
 
@@ -143,21 +143,21 @@ export const VideoPitchStep: React.FC<VideoPitchStepProps> = ({
     const aTrack = audioTracks[0];
 
     if (!vTrack.enabled || vTrack.muted || vTrack.readyState !== 'live') {
-      setHardwareError('⚠️ HARDWARE CHECK FAILED: Live video and microphone input required (camera track inactive or muted)');
+      setHardwareError('⚠️ LIVE VIDEO & AUDIO STREAM REQUIRED');
       return false;
     }
     if (!aTrack.enabled || aTrack.muted || aTrack.readyState !== 'live') {
-      setHardwareError('⚠️ HARDWARE CHECK FAILED: Live video and microphone input required (microphone track inactive or muted)');
+      setHardwareError('⚠️ LIVE VIDEO & AUDIO STREAM REQUIRED');
       return false;
     }
 
-    // Attach trackended listeners
+    // Attach trackended listeners for disconnected hardware
     vTrack.onended = () => {
-      setHardwareError('⚠️ HARDWARE CHECK FAILED: Live video and microphone input required (camera disconnected)');
+      setHardwareError('⚠️ LIVE VIDEO & AUDIO STREAM REQUIRED');
       setHasMediaAccess(false);
     };
     aTrack.onended = () => {
-      setHardwareError('⚠️ HARDWARE CHECK FAILED: Live video and microphone input required (microphone disconnected)');
+      setHardwareError('⚠️ LIVE VIDEO & AUDIO STREAM REQUIRED');
     };
 
     return true;
@@ -173,12 +173,12 @@ export const VideoPitchStep: React.FC<VideoPitchStepProps> = ({
         throw new Error('Your browser does not support WebRTC mediaDevices API.');
       }
 
-      // Optimal stream constraints to avoid lag: 640x480 at 30fps
+      // Exact stream constraints: 640x480 at 30fps
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
-          width: { ideal: 640 }, 
-          height: { ideal: 480 }, 
-          frameRate: { ideal: 30 } 
+          width: 640, 
+          height: 480, 
+          frameRate: 30 
         },
         audio: true,
       });
@@ -200,15 +200,7 @@ export const VideoPitchStep: React.FC<VideoPitchStepProps> = ({
       setupWebAudio(stream);
     } catch (err: any) {
       console.error('Camera/Mic access error:', err);
-      let errorMsg = '⚠️ HARDWARE CHECK FAILED: Live video and microphone input required';
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        errorMsg = '⚠️ HARDWARE CHECK FAILED: Camera and microphone permissions were denied. Please grant permission in your browser.';
-      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        errorMsg = '⚠️ HARDWARE CHECK FAILED: No webcam or microphone hardware detected on this machine.';
-      } else {
-        errorMsg = `⚠️ HARDWARE CHECK FAILED: ${err.message || 'Live video and microphone input required'}`;
-      }
-      setHardwareError(errorMsg);
+      setHardwareError('⚠️ LIVE VIDEO & AUDIO STREAM REQUIRED');
       setHasMediaAccess(false);
     }
   };

@@ -10,7 +10,8 @@ import {
   Languages, 
   Euro, 
   Award,
-  FileCheck
+  FileCheck,
+  Building2
 } from 'lucide-react';
 import { useApplicant } from '../store/applicantContext';
 
@@ -19,13 +20,19 @@ interface LandingViewProps {
   onOpenUniversityExplorer?: () => void;
   onOpenMockInterview?: () => void;
   onOpenBrochure?: () => void;
+  onOpenAnabinCashflow?: () => void;
+  onOpenDMatFunding?: () => void;
+  onResetProfile?: () => void;
 }
 
 export const LandingView: React.FC<LandingViewProps> = ({ 
   onSelectPathway, 
   onOpenUniversityExplorer,
   onOpenMockInterview,
-  onOpenBrochure 
+  onOpenBrochure,
+  onOpenAnabinCashflow,
+  onOpenDMatFunding,
+  onResetProfile,
 }) => {
   const { activeApplicant, updateActiveApplicant } = useApplicant();
 
@@ -41,8 +48,42 @@ export const LandingView: React.FC<LandingViewProps> = ({
     onSelectPathway(pathway);
   };
 
+  const candidateName = activeApplicant?.personal?.name?.trim() || 'New Intake Candidate';
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+      {/* Single Active Session Control & Clear Bar */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+            EU
+          </div>
+          <div>
+            <div className="text-[11px] text-slate-500 font-medium">Single Active Session</div>
+            <div className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              {candidateName}
+              {activeApplicant?.motivation?.pathway && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 uppercase font-semibold">
+                  {activeApplicant.motivation.pathway}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {onResetProfile && (
+          <button
+            onClick={onResetProfile}
+            id="btn-start-new-clear-profile"
+            className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold flex items-center gap-2 transition-all shadow-xs hover:shadow-sm active:scale-95"
+            title="Purge active applicant session and start a clean intake"
+          >
+            <span>↺ Start New / Clear Profile</span>
+          </button>
+        )}
+      </div>
+
       {/* Hero Header */}
       <div className="text-center space-y-4 max-w-3xl mx-auto">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold tracking-wide uppercase shadow-sm">
@@ -57,9 +98,9 @@ export const LandingView: React.FC<LandingViewProps> = ({
         </p>
       </div>
 
-      {/* Hero 3 Interactive Pathway Cards */}
+      {/* Hero 3 Interactive Animated Pathway Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Card 1: Higher Education */}
+        {/* Card 1: Higher Education & UG Studies */}
         <div
           onClick={() => handleSelect('STUDY')}
           className="group relative bg-white rounded-2xl border-2 border-slate-200 hover:border-blue-600 p-8 shadow-sm hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between"
@@ -76,10 +117,10 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
             <div>
               <h2 className="text-2xl font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
-                Higher Education & UG/PG
+                Higher Education & UG Studies
               </h2>
               <p className="text-sm font-medium text-slate-500 mt-1">
-                Bachelor's & Master's Degrees at 420+ Public Universities
+                Public universities, €0 tuition, APS certificate checks, Bavarian GPA conversion.
               </p>
             </div>
 
@@ -90,15 +131,15 @@ export const LandingView: React.FC<LandingViewProps> = ({
             <div className="space-y-2 pt-2 border-t border-slate-100 text-xs text-slate-600">
               <div className="flex items-center gap-2">
                 <Euro className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span><strong>€0 Tuition</strong> at top state-funded institutions</span>
+                <span><strong>€0 Tuition</strong> at public universities</span>
               </div>
               <div className="flex items-center gap-2">
                 <FileCheck className="w-4 h-4 text-blue-600 shrink-0" />
-                <span>APS Certificate & 180–210 ECTS compliance verification</span>
+                <span>APS certificate checks & consular verification</span>
               </div>
               <div className="flex items-center gap-2">
                 <Award className="w-4 h-4 text-purple-600 shrink-0" />
-                <span>Bavarian GPA conversion with admission odds calculation</span>
+                <span>KMK Bavarian GPA conversion & ECTS deficit audit</span>
               </div>
             </div>
           </div>
@@ -109,7 +150,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
           </div>
         </div>
 
-        {/* Card 2: Duale Ausbildung */}
+        {/* Card 2: Duale Ausbildung & Duales Studium */}
         <div
           onClick={() => handleSelect('AUSBILDUNG')}
           className="group relative bg-white rounded-2xl border-2 border-slate-200 hover:border-emerald-600 p-8 shadow-sm hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between"
@@ -126,29 +167,29 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
             <div>
               <h2 className="text-2xl font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
-                Duale Ausbildung
+                Duale Ausbildung & Duales Studium
               </h2>
               <p className="text-sm font-medium text-slate-500 mt-1">
-                Vocational Apprenticeships (Hospital Nursing, IT, Mechatronics)
+                Integrated vocational training and cooperative state degrees; paid monthly stipends (€1,100–€1,600/mo); German B1/B2 entry.
               </p>
             </div>
 
             <p className="text-sm text-slate-600 leading-relaxed">
-              Earn while you learn with monthly stipends of €1,100–€1,400. Zero €11,904 blocked account requirement. Work-study split between vocational school (*Berufsschule*) and enterprise.
+              Earn while you learn with monthly stipends of €1,100–€1,600/mo. Zero €11,904 blocked account requirement. Work-study split between vocational school (*Berufsschule*) and employer.
             </p>
 
             <div className="space-y-2 pt-2 border-t border-slate-100 text-xs text-slate-600">
               <div className="flex items-center gap-2">
                 <Euro className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span><strong>€1,100 – €1,400/mo</strong> direct salary from Year 1</span>
+                <span><strong>€1,100 – €1,600/mo</strong> paid monthly stipends</span>
               </div>
               <div className="flex items-center gap-2">
                 <Languages className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>German B1 (conditional) or B2 (direct placement)</span>
+                <span>German B1/B2 entry validation</span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-                <span>No Sperrkonto required (€0 blocked account exemption)</span>
+                <span>Cooperative state degrees with zero Sperrkonto</span>
               </div>
             </div>
           </div>
@@ -176,29 +217,29 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
             <div>
               <h2 className="text-2xl font-bold text-slate-900 group-hover:text-amber-700 transition-colors">
-                Chancenkarte
+                Skilled Employment (Chancenkarte)
               </h2>
               <p className="text-sm font-medium text-slate-500 mt-1">
-                Opportunity Card & Skilled Job Search Visa (Section 20a AufenthG)
+                Points-based opportunity card visa, § 20a AufenthG rights, EU Blue Card thresholds.
               </p>
             </div>
 
             <p className="text-sm text-slate-600 leading-relaxed">
-              Points-based legal job-seeker visa. Score ≥6 points via recognized degrees (Anabin H+), verified STEM/IT experience, language certs, and age thresholds. EU Blue Card evaluation included.
+              Points-based legal opportunity card visa. Score ≥6 points via recognized degrees (Anabin H+), verified STEM/IT experience, language certs, and age thresholds. EU Blue Card evaluation included.
             </p>
 
             <div className="space-y-2 pt-2 border-t border-slate-100 text-xs text-slate-600">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
-                <span><strong>6-Point Pass Threshold</strong> real-time simulator</span>
+                <span><strong>Points-based opportunity card visa</strong> (≥6 points)</span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-                <span>Anabin H+ institution & degree equivalence checker</span>
+                <span>§ 20a AufenthG rights & work authorization</span>
               </div>
               <div className="flex items-center gap-2">
                 <Euro className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>EU Blue Card salary test (€45,300 standard / €41,041 bottleneck)</span>
+                <span>EU Blue Card thresholds evaluation</span>
               </div>
             </div>
           </div>
@@ -252,6 +293,24 @@ export const LandingView: React.FC<LandingViewProps> = ({
               >
                 <FileCheck className="w-4 h-4 text-amber-400" />
                 <span>Prospectus Brochure</span>
+              </button>
+            )}
+            {onOpenAnabinCashflow && (
+              <button
+                onClick={onOpenAnabinCashflow}
+                className="px-4 py-2 bg-indigo-900/80 hover:bg-indigo-800 text-white border border-indigo-700/80 rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2"
+              >
+                <Building2 className="w-4 h-4 text-sky-400" />
+                <span>Anabin & Cashflow</span>
+              </button>
+            )}
+            {onOpenDMatFunding && (
+              <button
+                onClick={onOpenDMatFunding}
+                className="px-4 py-2 bg-emerald-900/80 hover:bg-emerald-800 text-white border border-emerald-700/80 rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2"
+              >
+                <Award className="w-4 h-4 text-emerald-400" />
+                <span>dMAT & Funding</span>
               </button>
             )}
           </div>

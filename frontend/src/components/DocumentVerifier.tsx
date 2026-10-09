@@ -21,7 +21,8 @@ import {
   FileSearch,
   Building,
   GraduationCap,
-  Briefcase
+  Briefcase,
+  Globe2
 } from 'lucide-react';
 import { 
   ApplicantRecord, 
@@ -68,48 +69,142 @@ export const DocumentVerifier: React.FC<DocumentVerifierProps> = ({
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'IDENTITY' | 'TIMELINE' | 'FORENSICS'>('IDENTITY');
+  const [evalUrl, setEvalUrl] = useState<string>(applicant.personal?.professionalProfileUrl || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Dynamic Milestone Years
+  const [userBirthYear, setUserBirthYear] = useState<number>(
+    applicant.dynamicMilestones?.birthYear || (applicant.personal?.age ? 2026 - applicant.personal.age : 2002)
+  );
+  const [userHighSchoolYear, setUserHighSchoolYear] = useState<number>(
+    applicant.dynamicMilestones?.twelfthYear || 2020
+  );
+  const [userDegreeStartYear, setUserDegreeStartYear] = useState<number>(
+    applicant.dynamicMilestones?.degreeStartYear || 2020
+  );
+  const [userDegreeGraduationYear, setUserDegreeGraduationYear] = useState<number>(
+    applicant.dynamicMilestones?.degreeGraduationYear || applicant.education?.graduationYear || 2024
+  );
+  const [userWorkStartYear, setUserWorkStartYear] = useState<number>(
+    applicant.dynamicMilestones?.workStartYear || 2024
+  );
+  const [userWorkEndYear, setUserWorkEndYear] = useState<number>(
+    applicant.dynamicMilestones?.workEndYear || 2026
+  );
+
+  // Professional URL & Slug Structure Evaluator
+  const urlEvaluation = useMemo(() => {
+    if (!evalUrl.trim()) {
+      return {
+        score: 0,
+        isValidSlug: false,
+        isNameCoherent: false,
+        status: 'UNVERIFIED',
+        feedback: 'Enter a LinkedIn profile or portfolio URL to audit authenticity.'
+      };
+    }
+
+    const clean = evalUrl.trim().toLowerCase();
+    const candidateName = (applicant.personal?.name || '').toLowerCase().trim();
+    const nameTokens = candidateName.split(/\s+/).filter(t => t.length > 2);
+
+    // Validate profile slug structure: linkedin.com/in/...
+    const isLinkedIn = clean.includes('linkedin.com/in/');
+    const linkedInSlugMatch = clean.match(/linkedin\.com\/in\/([a-zA-Z0-9_\-\.]+)/);
+    const slug = linkedInSlugMatch ? linkedInSlugMatch[1] : '';
+
+    const isGithub = clean.includes('github.com/');
+    const isPortfolio = clean.startsWith('http://') || clean.startsWith('https://');
+
+    if (!isPortfolio && !isLinkedIn && !isGithub) {
+      return {
+        score: 15,
+        isValidSlug: false,
+        isNameCoherent: false,
+        status: 'SUSPECT',
+        feedback: 'Invalid URL scheme. Must start with https://'
+      };
+    }
+
+    let coherenceScore = 40;
+    let matchesName = false;
+
+    if (nameTokens.length > 0) {
+      matchesName = nameTokens.some(token => clean.includes(token));
+    }
+
+    if (isLinkedIn) {
+      if (slug && slug.length >= 3) {
+        coherenceScore = matchesName ? 100 : 75;
+      } else {
+        coherenceScore = 40;
+      }
+    } else if (isGithub) {
+      coherenceScore = matchesName ? 90 : 70;
+    } else {
+      coherenceScore = matchesName ? 80 : 50;
+    }
+
+    return {
+      score: coherenceScore,
+      isValidSlug: isLinkedIn ? Boolean(slug) : true,
+      isNameCoherent: matchesName,
+      slug: slug || undefined,
+      status: coherenceScore >= 85 ? 'AUTHENTIC' : coherenceScore >= 60 ? 'MODERATE' : 'SUSPECT',
+      feedback: isLinkedIn
+        ? (matchesName
+            ? `Verified LinkedIn slug structure (/in/${slug}) coherent with candidate "${applicant.personal?.name}".`
+            : `Valid LinkedIn slug (/in/${slug}), but lacks candidate name token coherence.`)
+        : (matchesName
+            ? `Portfolio domain contains verified candidate name token.`
+            : `Generic domain link without direct candidate name alignment.`)
+    };
+  }, [evalUrl, applicant.personal?.name]);
 
   // -------------------------------------------------------------
   // 1. SENSITIVE ID PRIVACY GUARD (Strict GDPR & DPDP masking)
   // -------------------------------------------------------------
-  const maskSensitiveId = (text: string, type: string): { maskedId: string; sanitizedText: string } => {
+  const maskSensitiveId = (text: string, _type: string): { maskedId: string; sanitizedText: string } => {
     let masked = '[ID Masked]';
     let sanitized = text;
 
-    // 1. Indian Aadhaar: 12 digits (XXXX-XXXX-1234)
+    // 1. Indian Aadhaar: 12 digits (••••••••1234 [Masked])
     const aadhaarRegex = /\b(\d{4})[\s-]?(\d{4})[\s-]?(\d{4})\b/g;
     sanitized = sanitized.replace(aadhaarRegex, (_match, _p1, _p2, p3) => {
-      masked = `XXXX-XXXX-${p3}`;
-      return `XXXX-XXXX-${p3}`;
+      masked = `••••••••${p3} [Masked]`;
+      return `••••••••${p3} [Masked]`;
     });
 
-    // 2. Indian PAN Card: 10 chars (e.g. ABCDE1234F -> XXXXX-XXXX-F)
+    // 2. Indian PAN Card: 10 chars (••••••••1234 [Masked])
     const panRegex = /\b([A-Z]{5})(\d{4})([A-Z])\b/g;
-    sanitized = sanitized.replace(panRegex, (_match, _p1, _p2, p3) => {
-      masked = `XXXXX-XXXX-${p3}`;
-      return `XXXXX-XXXX-${p3}`;
+    sanitized = sanitized.replace(panRegex, (_match, _p1, p2, p3) => {
+      masked = `••••••••${p2.slice(-2)}${p3} [Masked]`;
+      return `••••••••${p2.slice(-2)}${p3} [Masked]`;
     });
 
-    // 3. Indian / International Passport: 1 letter + 7 digits
+    // 3. Indian / International Passport: 1 letter + 7 digits (••••••••1234 [Masked])
     const passportRegex = /\b([A-PR-WYa-pr-wy])([0-9]{4})([0-9]{3})\b/g;
-    sanitized = sanitized.replace(passportRegex, (_match, p1, _p2, p3) => {
-      masked = `${p1}XXXX${p3}`;
-      return `${p1}XXXX${p3}`;
+    sanitized = sanitized.replace(passportRegex, (_match, _p1, _p2, p3) => {
+      masked = `••••••••${p3} [Masked]`;
+      return `••••••••${p3} [Masked]`;
     });
 
-    // 4. Indian Voter ID (EPIC): 3 letters + 7 digits
+    // 4. Indian Voter ID (EPIC): 3 letters + 7 digits (••••••••1234 [Masked])
     const voterRegex = /\b([A-Z]{3})([0-9]{4})([0-9]{3})\b/g;
-    sanitized = sanitized.replace(voterRegex, (_match, p1, _p2, p3) => {
-      masked = `${p1}XXXX${p3}`;
-      return `${p1}XXXX${p3}`;
+    sanitized = sanitized.replace(voterRegex, (_match, _p1, _p2, p3) => {
+      masked = `••••••••${p3} [Masked]`;
+      return `••••••••${p3} [Masked]`;
+    });
+
+    // 5. Generic government identifier (8-16 digits)
+    const genericIdRegex = /\b\d{8,16}\b/g;
+    sanitized = sanitized.replace(genericIdRegex, (digits) => {
+      masked = `••••••••${digits.slice(-4)} [Masked]`;
+      return `••••••••${digits.slice(-4)} [Masked]`;
     });
 
     if (masked === '[ID Masked]') {
-      if (type === 'AADHAAR') masked = 'XXXX-XXXX-****';
-      else if (type === 'PAN') masked = 'XXXXX-****-*';
-      else if (type === 'PASSPORT') masked = 'P****-***';
-      else if (type === 'VOTER_ID') masked = 'EPIC-***-****';
+      masked = '[ID Masked]';
     }
 
     return { maskedId: masked, sanitizedText: sanitized };
@@ -193,12 +288,12 @@ export const DocumentVerifier: React.FC<DocumentVerifierProps> = ({
     }
 
     // First + Last name match with middle initial discrepancy
+    let isInitialVariant = false;
     const firstMatch = tokensA[0] === tokensB[0];
     const lastMatch = tokensA[tokensA.length - 1] === tokensB[tokensB.length - 1];
     if (firstMatch && lastMatch) {
       const midA = tokensA.slice(1, -1);
       const midB = tokensB.slice(1, -1);
-      let isInitialVariant = false;
       if (midA.length === 0 || midB.length === 0) {
         isInitialVariant = true;
       } else if (
@@ -222,22 +317,30 @@ export const DocumentVerifier: React.FC<DocumentVerifierProps> = ({
     const maxLen = Math.max(strA.length, strB.length);
     const dist = computeLevenshtein(strA, strB);
     const levScore = Math.max(0, Math.min(100, Math.round((1 - dist / maxLen) * 100)));
+    const score = isInitialVariant ? Math.max(levScore, 88) : levScore;
 
-    if (levScore >= 80) {
+    if (score >= 95) {
       return {
-        score: levScore,
+        score,
+        matchStatus: 'EXACT_MATCH',
+        tag: '🟢 NAME VERIFIED: Exact Match Across Academic Records',
+        notes: 'Exact token match across academic records.',
+      };
+    } else if (score >= 65) {
+      return {
+        score,
         matchStatus: 'MINOR_VARIANCE',
-        tag: '🟡 MINOR NAME VARIANCE: Requires Affidavit or Name Declaration for German Embassy',
-        notes: `Minor spelling/transliteration variance (${levScore}% character similarity).`,
+        tag: '🟡 MINOR VARIANCE: Valid token alias. German Embassy requires a 1-page Name Declaration Affidavit.',
+        notes: `Valid token alias with minor variance (${score}% character similarity).`,
+      };
+    } else {
+      return {
+        score,
+        matchStatus: 'CRITICAL_MISMATCH',
+        tag: '🔴 IDENTITY MISMATCH: Name on degree certificate differs from candidate profile.',
+        notes: `Discrepancy detected between "${strA}" and "${strB}".`,
       };
     }
-
-    return {
-      score: levScore,
-      matchStatus: 'CRITICAL_MISMATCH',
-      tag: '🚨 CRITICAL IDENTITY FRAUD: Document names do not match applicant profile',
-      notes: `Discrepancy detected between "${strA}" and "${strB}". Names belong to different individuals.`,
-    };
   };
 
   // Derive Identity Cross-Check Report
@@ -287,9 +390,9 @@ export const DocumentVerifier: React.FC<DocumentVerifierProps> = ({
       overallStatus,
       documentMatches,
       warningMessage: hasFraud
-        ? '🚨 CRITICAL IDENTITY FRAUD: Document names do not match applicant profile'
+        ? '🔴 IDENTITY MISMATCH: Name on degree certificate differs from candidate profile.'
         : hasMinor
-        ? '🟡 MINOR NAME VARIANCE: Requires Affidavit or Name Declaration for German Embassy'
+        ? '🟡 MINOR VARIANCE: Valid token alias. German Embassy requires a 1-page Name Declaration Affidavit.'
         : undefined,
     };
   }, [applicant]);
@@ -298,49 +401,15 @@ export const DocumentVerifier: React.FC<DocumentVerifierProps> = ({
   // 3. CHRONOLOGICAL TIMELINE & DATE AUDIT (Feasibility Rules)
   // -------------------------------------------------------------
   const timelineAudit: TimelineAuditResult = useMemo(() => {
-    if (applicant.timelineAudit) {
-      return applicant.timelineAudit;
-    }
-
     const currentYear = 2026;
     const currentMonth = 10;
-    let birthYear = applicant.personal?.age ? currentYear - applicant.personal.age : undefined;
-
-    // Scan docs for explicit DOB
-    for (const doc of applicant.documents || []) {
-      const text = doc.extractedText || '';
-      const dobMatch = text.match(/(?:dob|date\s*of\s*birth|born\s*on|geburtsdatum)[:\s]*([0-9]{1,2})[\/\-\.]([0-9]{1,2})[\/\-\.](199[0-9]|200[0-9])/i);
-      if (dobMatch && !birthYear) birthYear = parseInt(dobMatch[3], 10);
-    }
-
-    let bachelorGraduationYear = applicant.education?.graduationYear;
-    let bachelorStartYear: number | undefined;
-    let highSchoolPassingYear: number | undefined;
-
-    for (const doc of applicant.documents || []) {
-      const text = doc.extractedText || '';
-      const hsMatch = text.match(/(?:12th|hsc|higher\s*secondary|intermediate|cbse\s*12th|class\s*xii)[\s\S]{0,50}\b(201[0-9]|202[0-5])\b/i);
-      if (hsMatch) highSchoolPassingYear = parseInt(hsMatch[1], 10);
-
-      const bGradMatch = text.match(/(?:graduated|passed|conferred|convocation|year\s*of\s*passing)[:\s]*\b(201[5-9]|202[0-6])\b/i);
-      if (bGradMatch && !bachelorGraduationYear) bachelorGraduationYear = parseInt(bGradMatch[1], 10);
-    }
-
-    if (bachelorGraduationYear) {
-      const isThreeYear = (applicant.education?.degree || '').toLowerCase().includes('b.sc') && !(applicant.education?.degree || '').toLowerCase().includes('b.tech');
-      bachelorStartYear = bachelorGraduationYear - (isThreeYear ? 3 : 4);
-    }
-
-    if (bachelorStartYear && !highSchoolPassingYear) {
-      highSchoolPassingYear = bachelorStartYear;
-    }
-
-    const durationMonths = applicant.employment?.durationMonths || 0;
-    let employmentStartYear: number | undefined;
-    if (durationMonths > 0) {
-      const expYears = Math.ceil(durationMonths / 12);
-      employmentStartYear = currentYear - expYears;
-    }
+    const birthYear = userBirthYear;
+    const highSchoolPassingYear = userHighSchoolYear;
+    const bachelorStartYear = userDegreeStartYear;
+    const bachelorGraduationYear = userDegreeGraduationYear;
+    const employmentStartYear = userWorkStartYear;
+    const employmentEndYear = userWorkEndYear;
+    const durationMonths = Math.max(0, (employmentEndYear - employmentStartYear) * 12);
 
     const feasibilityViolations: string[] = [];
     const advisoryAlerts: string[] = [];
@@ -355,35 +424,47 @@ export const DocumentVerifier: React.FC<DocumentVerifierProps> = ({
         );
       }
     }
-
-    // Rule B: 12th vs Bachelor Start
+    // Rule B: 12th vs Bachelor Start (commenced prior to 12th graduation)
     if (highSchoolPassingYear && bachelorStartYear && bachelorStartYear < highSchoolPassingYear) {
       feasibilityViolations.push(
-        `INCONSISTENT EDUCATION TIMELINE: Bachelor degree start year (${bachelorStartYear}) precedes 12th/High School completion year (${highSchoolPassingYear}).`
+        `INCONSISTENT EDUCATION TIMELINE: Bachelor studies commenced (${bachelorStartYear}) prior to 12th / High School graduation (${highSchoolPassingYear}).`
       );
     }
 
-    // Rule C: Degree vs Employment (Internship vs Post-Study)
+    // Rule C: Bachelor duration under 3 statutory years
+    if (bachelorGraduationYear && bachelorStartYear) {
+      const bDuration = bachelorGraduationYear - bachelorStartYear;
+      if (bDuration < 3) {
+        feasibilityViolations.push(
+          `INSUFFICIENT STATUTORY DEGREE DURATION: Bachelor study duration is under 3 statutory years (${bDuration} years). German ZAB & Bologna Process require minimum 3 years (180 ECTS).`
+        );
+      }
+    }
+
+    // Rule D: Degree vs Employment (Internship vs Post-Study)
     if (bachelorGraduationYear && employmentStartYear && employmentStartYear < bachelorGraduationYear) {
       advisoryAlerts.push(
         `EMPLOYMENT CLASSIFICATION: Work experience starting in ${employmentStartYear} precedes graduation in ${bachelorGraduationYear}. Must be formally designated as 'Student Internship / Dual Working Student' for German Embassy.`
       );
     }
 
-    // Rule D: Education Gap Detection (> 12 months)
+    // Rule E: Education Gap Detection (> 12 months)
     let gapMonths = 0;
     let unexplainedGapDetected = false;
     if (bachelorGraduationYear) {
-      const totalMonthsSinceGraduation = Math.max(0, (currentYear - bachelorGraduationYear) * 12 + (currentMonth - 6));
-      gapMonths = Math.max(0, totalMonthsSinceGraduation - durationMonths);
+      if (employmentStartYear > bachelorGraduationYear) {
+        gapMonths = Math.max(0, (employmentStartYear - bachelorGraduationYear) * 12);
+      } else if (employmentStartYear === 0 || durationMonths === 0) {
+        const totalMonthsSinceGraduation = Math.max(0, (currentYear - bachelorGraduationYear) * 12 + (currentMonth - 6));
+        gapMonths = Math.max(0, totalMonthsSinceGraduation - durationMonths);
+      }
       if (gapMonths >= 12) {
         unexplainedGapDetected = true;
         advisoryAlerts.push(
-          `⚠️ UNEXPLAINED GAP OF ${gapMonths} MONTHS: German Embassy requires proof (Gap Explanation Letter / Internship Certs) to prevent visa refusal.`
+          `⚠️ UNEXPLAINED GAP OF ${gapMonths} MONTHS: German Embassy mandates an official Gap Explanation Letter and experiential proof.`
         );
       }
     }
-
     const milestones: TimelineMilestone[] = [];
     if (birthYear) {
       milestones.push({
@@ -453,7 +534,7 @@ export const DocumentVerifier: React.FC<DocumentVerifierProps> = ({
       advisoryAlerts,
       milestones,
     };
-  }, [applicant]);
+  }, [applicant, userBirthYear, userHighSchoolYear, userDegreeStartYear, userDegreeGraduationYear, userWorkStartYear, userWorkEndYear]);
 
   // -------------------------------------------------------------
   // 4. FORENSIC INSPECTION OF NEW UPLOAD
@@ -843,6 +924,59 @@ export const DocumentVerifier: React.FC<DocumentVerifierProps> = ({
               </div>
             )}
           </div>
+
+          {/* Professional URL Evaluator (LinkedIn / Portfolio) */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5 uppercase tracking-wider">
+                <Globe2 className="w-3.5 h-3.5 text-blue-600" />
+                Professional URL & Profile Authenticity Evaluator
+              </span>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                urlEvaluation.status === 'AUTHENTIC'
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  : urlEvaluation.status === 'MODERATE'
+                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                  : 'bg-slate-100 text-slate-700 border-slate-200'
+              }`}>
+                Score: {urlEvaluation.score}% • {urlEvaluation.status}
+              </span>
+            </div>
+
+            <p className="text-[11px] text-slate-500">
+              Validates profile slug structure (<code className="font-mono text-slate-700">linkedin.com/in/...</code>) and checks domain coherence against candidate name (<strong className="text-slate-800">{applicant.personal?.name}</strong>).
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="url"
+                value={evalUrl}
+                onChange={(e) => setEvalUrl(e.target.value)}
+                placeholder="https://linkedin.com/in/aarav-patel or https://portfolio.dev"
+                className="flex-1 text-xs px-3.5 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+              <div className="flex items-center gap-2">
+                <div className="w-32 bg-slate-200 h-3 rounded-full overflow-hidden shrink-0">
+                  <div
+                    className={`h-full transition-all duration-500 ${
+                      urlEvaluation.score >= 80 ? 'bg-emerald-500' : urlEvaluation.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+                    }`}
+                    style={{ width: `${urlEvaluation.score}%` }}
+                  />
+                </div>
+                <span className="font-mono font-bold text-xs text-slate-800 w-10 text-right">
+                  {urlEvaluation.score}%
+                </span>
+              </div>
+            </div>
+
+            <div className="text-[11px] text-slate-600 flex items-center gap-1.5 bg-white p-2.5 rounded-lg border border-slate-200">
+              <span className="shrink-0">
+                {urlEvaluation.status === 'AUTHENTIC' ? '🟢' : urlEvaluation.status === 'MODERATE' ? '🟡' : '⚪'}
+              </span>
+              <span>{urlEvaluation.feedback}</span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -851,6 +985,92 @@ export const DocumentVerifier: React.FC<DocumentVerifierProps> = ({
       {/* ======================================================== */}
       {activeTab === 'TIMELINE' && (
         <div className="space-y-5 animate-fadeIn">
+          {/* Dynamic Milestone Years Intake Card */}
+          <div className="bg-gradient-to-r from-slate-900 to-sky-950 p-5 rounded-2xl text-white shadow-sm space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2">
+              <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5 uppercase tracking-wider">
+                <Calendar className="w-4 h-4 text-amber-400" /> Dynamic Milestone Timeline Inputs
+              </span>
+              <span className="text-[11px] text-sky-200">
+                Live Embassy Feasibility & Gap Detector
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+              <div>
+                <label className="text-[10px] text-slate-300 block mb-1 font-semibold">Birth Year</label>
+                <input
+                  type="number"
+                  min="1970"
+                  max="2010"
+                  value={userBirthYear}
+                  onChange={(e) => setUserBirthYear(Number(e.target.value))}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-2.5 py-1.5 text-white font-mono font-bold focus:outline-none focus:ring-1 focus:ring-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-300 block mb-1 font-semibold">12th / High School</label>
+                <input
+                  type="number"
+                  min="1990"
+                  max="2026"
+                  value={userHighSchoolYear}
+                  onChange={(e) => setUserHighSchoolYear(Number(e.target.value))}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-2.5 py-1.5 text-white font-mono font-bold focus:outline-none focus:ring-1 focus:ring-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-300 block mb-1 font-semibold">Degree Start</label>
+                <input
+                  type="number"
+                  min="1990"
+                  max="2026"
+                  value={userDegreeStartYear}
+                  onChange={(e) => setUserDegreeStartYear(Number(e.target.value))}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-2.5 py-1.5 text-white font-mono font-bold focus:outline-none focus:ring-1 focus:ring-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-300 block mb-1 font-semibold">Degree Graduation</label>
+                <input
+                  type="number"
+                  min="1990"
+                  max="2026"
+                  value={userDegreeGraduationYear}
+                  onChange={(e) => setUserDegreeGraduationYear(Number(e.target.value))}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-2.5 py-1.5 text-white font-mono font-bold focus:outline-none focus:ring-1 focus:ring-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-300 block mb-1 font-semibold">Work Start</label>
+                <input
+                  type="number"
+                  min="1990"
+                  max="2026"
+                  value={userWorkStartYear}
+                  onChange={(e) => setUserWorkStartYear(Number(e.target.value))}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-2.5 py-1.5 text-white font-mono font-bold focus:outline-none focus:ring-1 focus:ring-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-300 block mb-1 font-semibold">Work End / Current</label>
+                <input
+                  type="number"
+                  min="1990"
+                  max="2026"
+                  value={userWorkEndYear}
+                  onChange={(e) => setUserWorkEndYear(Number(e.target.value))}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-2.5 py-1.5 text-white font-mono font-bold focus:outline-none focus:ring-1 focus:ring-amber-400"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Feasibility Alert Callouts */}
           {timelineAudit.feasibilityViolations.length > 0 && (
             <div className="bg-rose-50 border border-rose-200 p-4 rounded-xl text-xs text-rose-950 space-y-1.5">

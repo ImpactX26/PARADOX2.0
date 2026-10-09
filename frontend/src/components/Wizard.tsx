@@ -33,6 +33,7 @@ import { DocumentVerifier } from './DocumentVerifier';
 import { CVGenerator } from './CVGenerator';
 import { PersonalizedBrochure } from './PersonalizedBrochure';
 import { ConsultantAdmissionsReport } from './ConsultantAdmissionsReport';
+import { TranscriptAuditCalculator } from './TranscriptAuditCalculator';
 
 interface WizardProps {
   applicant: ApplicantRecord;
@@ -71,6 +72,17 @@ export const Wizard: React.FC<WizardProps> = ({
   const [profileUrl, setProfileUrl] = useState(applicant.personal?.professionalProfileUrl || '');
   const [pathway, setPathway] = useState<'STUDY' | 'AUSBILDUNG' | 'CHANCENKARTE'>(
     applicant.motivation?.pathway || 'STUDY'
+  );
+
+  // Education & Employment fields
+  const [degree, setDegree] = useState(applicant.education?.degree || '');
+  const [institution, setInstitution] = useState(applicant.education?.institution || '');
+  const [fieldOfStudy, setFieldOfStudy] = useState(applicant.education?.fieldOfStudy || '');
+  const [grade, setGrade] = useState(applicant.education?.grade || '');
+  const [role, setRole] = useState(applicant.employment?.role || '');
+  const [employer, setEmployer] = useState(applicant.employment?.employer || '');
+  const [isCvVerified, setIsCvVerified] = useState<boolean>(
+    applicant.education?.provenance === 'Verified from Uploaded CV' || Boolean(applicant.education?.isVerified)
   );
 
   // Compute profile authenticity heuristics
@@ -123,6 +135,15 @@ export const Wizard: React.FC<WizardProps> = ({
     setCity(applicant.personal?.city || 'Bangalore');
     setProfileUrl(applicant.personal?.professionalProfileUrl || '');
     setPathway(applicant.motivation?.pathway || 'STUDY');
+    setDegree(applicant.education?.degree || '');
+    setInstitution(applicant.education?.institution || '');
+    setFieldOfStudy(applicant.education?.fieldOfStudy || '');
+    setGrade(applicant.education?.grade || '');
+    setRole(applicant.employment?.role || '');
+    setEmployer(applicant.employment?.employer || '');
+    if (applicant.education?.provenance === 'Verified from Uploaded CV' || applicant.education?.isVerified) {
+      setIsCvVerified(true);
+    }
   }, [applicant]);
 
   // Handle Step 1 Save
@@ -139,6 +160,22 @@ export const Wizard: React.FC<WizardProps> = ({
         professionalProfileUrl: profileUrl,
         profileAuthenticityScore: profileAuth.score,
         profileAuthenticityStatus: profileAuth.status,
+      },
+      education: {
+        ...applicant.education,
+        degree,
+        institution,
+        fieldOfStudy,
+        grade,
+        isVerified: isCvVerified,
+        provenance: isCvVerified ? 'Verified from Uploaded CV' : applicant.education?.provenance,
+      },
+      employment: {
+        ...applicant.employment,
+        role,
+        employer,
+        isVerified: isCvVerified,
+        provenance: isCvVerified ? 'Verified from Uploaded CV' : applicant.employment?.provenance,
       },
       motivation: {
         ...applicant.motivation,
@@ -193,6 +230,13 @@ export const Wizard: React.FC<WizardProps> = ({
     if (data.email) setEmail(data.email);
     if (data.phone) setPhone(data.phone);
     if (data.city) setCity(data.city);
+    if (data.degree) setDegree(data.degree);
+    if (data.institution) setInstitution(data.institution);
+    if (data.fieldOfStudy) setFieldOfStudy(data.fieldOfStudy);
+    if (data.grade) setGrade(data.grade);
+    if (data.role) setRole(data.role);
+    if (data.employer) setEmployer(data.employer);
+    setIsCvVerified(true);
 
     let calcGermanGrade: number | undefined = applicant.education?.germanGrade;
     if (data.grade) {
@@ -423,7 +467,14 @@ export const Wizard: React.FC<WizardProps> = ({
 
             <div className="grid sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Full Legal Name</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Full Legal Name</span>
+                  {isCvVerified && (
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      ✓ [ Verified from CV ]
+                    </span>
+                  )}
+                </label>
                 <input
                   type="text"
                   value={name}
@@ -434,7 +485,14 @@ export const Wizard: React.FC<WizardProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Email Address</span>
+                  {isCvVerified && (
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      ✓ [ Verified from CV ]
+                    </span>
+                  )}
+                </label>
                 <input
                   type="email"
                   value={email}
@@ -445,7 +503,14 @@ export const Wizard: React.FC<WizardProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Contact Phone</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Contact Phone</span>
+                  {isCvVerified && (
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      ✓ [ Verified from CV ]
+                    </span>
+                  )}
+                </label>
                 <input
                   type="text"
                   value={phone}
@@ -468,7 +533,14 @@ export const Wizard: React.FC<WizardProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">City of Residence</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>City of Residence</span>
+                  {isCvVerified && (
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      ✓ [ Verified from CV ]
+                    </span>
+                  )}
+                </label>
                 <input
                   type="text"
                   value={city}
@@ -486,6 +558,130 @@ export const Wizard: React.FC<WizardProps> = ({
                   disabled
                   className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-500 font-medium cursor-not-allowed"
                 />
+              </div>
+            </div>
+
+            {/* Academic & Professional Credentials Ingested from CV */}
+            <div className="mt-5 pt-4 border-t border-slate-100 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider">
+                  <GraduationCap className="w-4 h-4 text-sky-600" /> Academic & Professional Intake
+                </span>
+                {isCvVerified && (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    ✓ Verified from Uploaded CV
+                  </span>
+                )}
+              </div>
+
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Degree</span>
+                    {isCvVerified && (
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        ✓ [ Verified from CV ]
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    value={degree}
+                    onChange={(e) => setDegree(e.target.value)}
+                    placeholder="e.g. Bachelor of Technology (B.Tech)"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Institution</span>
+                    {isCvVerified && (
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        ✓ [ Verified from CV ]
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    value={institution}
+                    onChange={(e) => setInstitution(e.target.value)}
+                    placeholder="e.g. Anna University"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Major / Discipline</span>
+                    {isCvVerified && (
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        ✓ [ Verified from CV ]
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    value={fieldOfStudy}
+                    onChange={(e) => setFieldOfStudy(e.target.value)}
+                    placeholder="e.g. Computer Science & Engineering"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>CGPA / Grade</span>
+                    {isCvVerified && (
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        ✓ [ Verified from CV ]
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    value={grade}
+                    onChange={(e) => setGrade(e.target.value)}
+                    placeholder="e.g. 8.6 / 10.0 or First Class"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Role / Designation</span>
+                    {isCvVerified && (
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        ✓ [ Verified from CV ]
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    placeholder="e.g. Software Engineer"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Employer / Firm</span>
+                    {isCvVerified && (
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        ✓ [ Verified from CV ]
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    value={employer}
+                    onChange={(e) => setEmployer(e.target.value)}
+                    placeholder="e.g. Technology Solutions Pvt Ltd"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  />
+                </div>
               </div>
             </div>
 
@@ -896,6 +1092,17 @@ export const Wizard: React.FC<WizardProps> = ({
               )}
             </div>
           </div>
+
+          {/* Dynamic Transcript & ECTS Credit Deficit Calculator */}
+          <TranscriptAuditCalculator
+            applicant={applicant}
+            onUpdateModules={async (modules, mult) => {
+              await onUpdateProfile({
+                transcriptModules: modules,
+                ectsMultiplier: mult,
+              });
+            }}
+          />
 
           {/* Expert German University Admissions Consultant Diagnostic Report */}
           <ConsultantAdmissionsReport applicant={applicant} />

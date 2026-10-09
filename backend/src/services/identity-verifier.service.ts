@@ -96,16 +96,16 @@ export class IdentityVerifierService {
     const strA = tokensA.join(' ');
     const strB = tokensB.join(' ');
 
-    // 1. Exact match
+    // 1. Exact match (>= 95%)
     if (strA === strB) {
       return {
         score: 100,
         matchStatus: 'EXACT_MATCH',
-        notes: '100% Match: Exact token match across document and profile.',
+        notes: '🟢 NAME VERIFIED: Exact Match Across Academic Records',
       };
     }
 
-    // 2. Token Set Exact (e.g. "Patel Aarav" vs "Aarav Patel")
+    // Token set equality (e.g. order variance: "Patel Aarav" vs "Aarav Patel")
     const setA = new Set(tokensA);
     const setB = new Set(tokensB);
     const areSetsEqual = tokensA.every(t => setB.has(t)) && tokensB.every(t => setA.has(t));
@@ -113,57 +113,51 @@ export class IdentityVerifierService {
       return {
         score: 98,
         matchStatus: 'EXACT_MATCH',
-        notes: '100% Match: Exact token set match with altered word ordering.',
+        notes: '🟢 NAME VERIFIED: Exact Match Across Academic Records',
       };
     }
 
-    // 3. Middle Initial / Abbreviation Check
-    // e.g. "Aarav Kumar Patel" vs "Aarav K. Patel" or "Aarav K Patel"
-    const firstMatch = tokensA[0] === tokensB[0];
-    const lastMatch = tokensA[tokensA.length - 1] === tokensB[tokensB.length - 1];
-
-    if (firstMatch && lastMatch) {
-      // Check if middle tokens are initials of each other
-      const middleA = tokensA.slice(1, -1);
-      const middleB = tokensB.slice(1, -1);
-
-      let isInitialVariant = false;
-      if (middleA.length === 0 || middleB.length === 0) {
-        // e.g. "Aarav Patel" vs "Aarav Kumar Patel"
-        isInitialVariant = true;
-      } else if (
-        (middleA.length === 1 && middleB.length === 1 && (middleA[0][0] === middleB[0][0] || middleA[0] === middleB[0][0] || middleB[0] === middleA[0][0]))
-      ) {
-        isInitialVariant = true;
-      }
-
-      if (isInitialVariant) {
-        return {
-          score: 88,
-          matchStatus: 'MINOR_VARIANCE',
-          notes: '🟡 MINOR NAME VARIANCE: Requires Affidavit or Name Declaration for German Embassy (Middle initial / abbreviation discrepancy)',
-        };
-      }
-    }
-
-    // 4. Levenshtein Distance
+    // Levenshtein & Token comparison
     const maxLen = Math.max(strA.length, strB.length);
     const dist = this.levenshteinDistance(strA, strB);
     const levScore = Math.round((1 - dist / maxLen) * 100);
 
-    if (levScore >= 80) {
-      return {
-        score: levScore,
-        matchStatus: 'MINOR_VARIANCE',
-        notes: '🟡 MINOR NAME VARIANCE: Requires Affidavit or Name Declaration for German Embassy (Spelling / transliteration variance)',
-      };
+    // Middle initial or token alias check (e.g. "Aarav Kumar Patel" vs "Aarav K. Patel")
+    const firstMatch = tokensA[0] === tokensB[0];
+    const lastMatch = tokensA[tokensA.length - 1] === tokensB[tokensB.length - 1];
+    let isTokenAlias = false;
+
+    if (firstMatch && lastMatch) {
+      const midA = tokensA.slice(1, -1);
+      const midB = tokensB.slice(1, -1);
+      if (midA.length === 0 || midB.length === 0) {
+        isTokenAlias = true;
+      } else if (midA.length === 1 && midB.length === 1 && (midA[0][0] === midB[0][0] || midA[0] === midB[0][0] || midB[0] === midA[0][0])) {
+        isTokenAlias = true;
+      }
     }
 
-    return {
-      score: levScore,
-      matchStatus: 'CRITICAL_MISMATCH',
-      notes: '🚨 CRITICAL IDENTITY FRAUD: Document names do not match applicant profile',
-    };
+    const calculatedScore = isTokenAlias ? Math.max(levScore, 85) : levScore;
+
+    if (calculatedScore >= 95) {
+      return {
+        score: calculatedScore,
+        matchStatus: 'EXACT_MATCH',
+        notes: '🟢 NAME VERIFIED: Exact Match Across Academic Records',
+      };
+    } else if (calculatedScore >= 65) {
+      return {
+        score: calculatedScore,
+        matchStatus: 'MINOR_VARIANCE',
+        notes: '🟡 MINOR VARIANCE: Valid token alias. German Embassy requires a 1-page Name Declaration Affidavit.',
+      };
+    } else {
+      return {
+        score: calculatedScore,
+        matchStatus: 'CRITICAL_MISMATCH',
+        notes: '🔴 IDENTITY MISMATCH: Name on degree certificate differs from candidate profile.',
+      };
+    }
   }
 
   /**
@@ -215,14 +209,12 @@ export class IdentityVerifierService {
       : hasMinor
       ? 'MINOR_VARIANCE'
       : 'VERIFIED';
-
     let warningMessage: string | undefined;
     if (hasFraud) {
-      warningMessage = '🚨 CRITICAL IDENTITY FRAUD: Document names do not match applicant profile. Immediate counselor intervention required.';
+      warningMessage = '🔴 IDENTITY MISMATCH: Name on degree certificate differs from candidate profile.';
     } else if (hasMinor) {
-      warningMessage = '🟡 MINOR NAME VARIANCE: One or more documents show minor spelling or initial differences. German Embassy requires a sworn One-and-the-Same Person Affidavit.';
+      warningMessage = '🟡 MINOR VARIANCE: Valid token alias. German Embassy requires a 1-page Name Declaration Affidavit.';
     }
-
     return {
       primaryName,
       overallMatchScore,

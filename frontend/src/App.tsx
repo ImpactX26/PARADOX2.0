@@ -11,6 +11,8 @@ import { CounselorCRM } from './components/CounselorCRM';
 import { CourseDirectory } from './components/CourseDirectory';
 import { CVGenerator } from './components/CVGenerator';
 import { PersonalizedBrochure } from './components/PersonalizedBrochure';
+import { AnabinAndWerkstudentSuite } from './components/AnabinAndWerkstudentSuite';
+import { StudentSuccessAndFundingSuite } from './components/StudentSuccessAndFundingSuite';
 import { DatabaseControlBar } from './store/applicantStore';
 import { ApplicantProvider, useApplicant } from './store/applicantContext';
 import { ApplicantRecord } from './types';
@@ -140,6 +142,9 @@ const MainApp: React.FC = () => {
                 onOpenUniversityExplorer={() => setActiveTab('ranker')}
                 onOpenMockInterview={() => setActiveTab('interview')}
                 onOpenBrochure={() => setActiveTab('cv_brochure')}
+                onOpenAnabinCashflow={() => setActiveTab('anabin_cashflow')}
+                onOpenDMatFunding={() => setActiveTab('dmat_funding')}
+                onResetProfile={handleReset}
               />
             )}
 
@@ -192,6 +197,20 @@ const MainApp: React.FC = () => {
                     });
                   }}
                 />
+              </div>
+            )}
+
+            {/* 6. Anabin Classifier & Werkstudent Cashflow Simulator */}
+            {activeTab === 'anabin_cashflow' && (
+              <div className="max-w-7xl mx-auto px-4 py-8">
+                <AnabinAndWerkstudentSuite applicant={activeApplicant} />
+              </div>
+            )}
+
+            {/* 7. dMAT Performance Evaluator & Funding Hub */}
+            {activeTab === 'dmat_funding' && (
+              <div className="max-w-7xl mx-auto px-4 py-8">
+                <StudentSuccessAndFundingSuite applicant={activeApplicant} />
               </div>
             )}
 

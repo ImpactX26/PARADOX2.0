@@ -115,12 +115,22 @@ export class TimelineValidatorService {
     if (highSchoolPassingYear && bachelorStartYear) {
       if (bachelorStartYear < highSchoolPassingYear) {
         feasibilityViolations.push(
-          `INCONSISTENT EDUCATION TIMELINE: Bachelor degree start year (${bachelorStartYear}) precedes 12th/High School completion year (${highSchoolPassingYear}).`
+          `INCONSISTENT EDUCATION TIMELINE: Bachelor degree studies commenced (${bachelorStartYear}) prior to 12th/High School completion (${highSchoolPassingYear}).`
         );
       }
     }
 
-    // Rule C: Degree vs Employment (prior to graduation = Internship/Student Part-Time)
+    // Rule C: Bachelor Duration Under 3 Statutory Years
+    if (bachelorGraduationYear && bachelorStartYear) {
+      const bachelorDuration = bachelorGraduationYear - bachelorStartYear;
+      if (bachelorDuration < 3) {
+        feasibilityViolations.push(
+          `INSUFFICIENT STATUTORY DEGREE DURATION: Bachelor study duration is under 3 statutory years (${bachelorDuration} years). German ZAB & Bologna standards mandate a minimum 3-year curriculum (180 ECTS).`
+        );
+      }
+    }
+
+    // Rule D: Degree vs Employment
     if (bachelorGraduationYear && employmentStartYear) {
       if (employmentStartYear < bachelorGraduationYear) {
         advisoryAlerts.push(
@@ -129,7 +139,7 @@ export class TimelineValidatorService {
       }
     }
 
-    // Rule D: Education Gap Detection
+    // Rule E: Education Gap Detection (> 12 months)
     let gapMonths = 0;
     let unexplainedGapDetected = false;
     if (bachelorGraduationYear) {
@@ -139,10 +149,12 @@ export class TimelineValidatorService {
       if (gapMonths >= 12) {
         unexplainedGapDetected = true;
         advisoryAlerts.push(
-          `⚠️ UNEXPLAINED GAP OF ${gapMonths} MONTHS: German Embassy requires proof (Gap Explanation Letter / Internship Certificates / German Language Course receipts) between ${bachelorGraduationYear} and ${currentYear} to prevent Section 16b / 20a visa refusal.`
+          `⚠️ UNEXPLAINED GAP OF ${gapMonths} MONTHS: German Embassy mandates an official Gap Explanation Letter and experiential proof.`
         );
       }
     }
+
+
 
     // 3. Assemble Milestones
     const milestones: TimelineMilestone[] = [];

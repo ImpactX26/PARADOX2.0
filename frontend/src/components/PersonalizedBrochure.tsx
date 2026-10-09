@@ -324,24 +324,148 @@ export const PersonalizedBrochure: React.FC<PersonalizedBrochureProps> = ({ appl
               )}
             </div>
 
-            {/* Missing Prerequisites & Compliance Checklist */}
+            {/* Dynamic Transcript & ECTS Credit Deficit Audit Breakdown */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <GraduationCap className="w-3.5 h-3.5 text-sky-600" />
+                  <span>Dynamic ECTS Audit Breakdown (Master's Prerequisites)</span>
+                </h3>
+                <span className="text-[10px] text-slate-500 font-mono">Standard Multiplier: 1 Cr = 1.5 ECTS</span>
+              </div>
+
+              {(() => {
+                const modules = applicant?.transcriptModules || [
+                  { id: '1', courseName: 'Discrete Mathematics & Graph Theory', category: 'MATHEMATICS', indianCredits: 4, letterGrade: 'A' },
+                  { id: '2', courseName: 'Probability, Statistics & Linear Algebra', category: 'MATHEMATICS', indianCredits: 4, letterGrade: 'A+' },
+                  { id: '3', courseName: 'Data Structures & Algorithms', category: 'SYSTEMS', indianCredits: 4, letterGrade: 'O' },
+                  { id: '4', courseName: 'Operating Systems & Architecture', category: 'SYSTEMS', indianCredits: 4, letterGrade: 'A' },
+                  { id: '5', courseName: 'Database Management Systems', category: 'SYSTEMS', indianCredits: 4, letterGrade: 'A+' },
+                  { id: '6', courseName: 'Object Oriented Programming', category: 'SYSTEMS', indianCredits: 4, letterGrade: 'A' },
+                  { id: '7', courseName: 'Machine Learning & Neural Networks', category: 'ELECTIVES', indianCredits: 4, letterGrade: 'A+' },
+                  { id: '8', courseName: 'Cloud Computing & Distributed Systems', category: 'ELECTIVES', indianCredits: 4, letterGrade: 'A' },
+                  { id: '9', courseName: 'Software Engineering & Agile Methods', category: 'ELECTIVES', indianCredits: 3, letterGrade: 'A' },
+                ];
+                const multiplier = applicant?.ectsMultiplier || 1.5;
+
+                const mathCredits = modules.filter(m => m.category === 'MATHEMATICS').reduce((sum, m) => sum + m.indianCredits, 0);
+                const systemsCredits = modules.filter(m => m.category === 'SYSTEMS').reduce((sum, m) => sum + m.indianCredits, 0);
+                const electivesCredits = modules.filter(m => m.category === 'ELECTIVES').reduce((sum, m) => sum + m.indianCredits, 0);
+
+                const mathEcts = Math.round(mathCredits * multiplier * 10) / 10;
+                const systemsEcts = Math.round(systemsCredits * multiplier * 10) / 10;
+                const electivesEcts = Math.round(electivesCredits * multiplier * 10) / 10;
+
+                const mathReq = 18;
+                const systemsReq = 32;
+                const electivesReq = 20;
+
+                const mathDeficit = Math.max(0, mathReq - mathEcts);
+                const systemsDeficit = Math.max(0, systemsReq - systemsEcts);
+                const electivesDeficit = Math.max(0, electivesReq - electivesEcts);
+                const isAllMet = mathDeficit === 0 && systemsDeficit === 0 && electivesDeficit === 0;
+
+                return (
+                  <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
+                    <table className="w-full text-left">
+                      <thead className="bg-slate-100 border-b border-slate-200 text-[11px] font-bold text-slate-700">
+                        <tr>
+                          <th className="p-2.5">Academic Pillar</th>
+                          <th className="p-2.5">German Standard</th>
+                          <th className="p-2.5">Candidate Earned</th>
+                          <th className="p-2.5">ECTS Deficit Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        <tr>
+                          <td className="p-2.5 font-semibold text-slate-800">Mathematics & Theoretical CS</td>
+                          <td className="p-2.5 font-mono text-slate-600">{mathReq} ECTS</td>
+                          <td className="p-2.5 font-mono font-bold text-slate-900">{mathEcts} ECTS</td>
+                          <td className="p-2.5">
+                            {mathDeficit === 0 ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                ✓ Requirement Met
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">
+                                -{mathDeficit} ECTS Deficit (Prep Bridge)
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-semibold text-slate-800">Core Systems & Algorithms</td>
+                          <td className="p-2.5 font-mono text-slate-600">{systemsReq} ECTS</td>
+                          <td className="p-2.5 font-mono font-bold text-slate-900">{systemsEcts} ECTS</td>
+                          <td className="p-2.5">
+                            {systemsDeficit === 0 ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                ✓ Requirement Met
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">
+                                -{systemsDeficit} ECTS Deficit (Prep Bridge)
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-semibold text-slate-800">Applied Electives & Labs</td>
+                          <td className="p-2.5 font-mono text-slate-600">{electivesReq} ECTS</td>
+                          <td className="p-2.5 font-mono font-bold text-slate-900">{electivesEcts} ECTS</td>
+                          <td className="p-2.5">
+                            {electivesDeficit === 0 ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                ✓ Requirement Met
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">
+                                -{electivesDeficit} ECTS Deficit (Prep Bridge)
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div className="bg-slate-50 p-2.5 border-t border-slate-200 flex items-center justify-between">
+                      <span className="text-[11px] font-medium text-slate-600">Overall ECTS Admission Eligibility:</span>
+                      {isAllMet ? (
+                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          🟢 ECTS PREREQUISITES MET: Eligible for Direct Public Master's Admission
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                          🟡 CONDITIONAL ADMISSION: Preparatory Bridge Module Required
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Required Next Steps & Missing Prerequisites Checklist */}
             <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-5 space-y-3 text-xs">
               <h3 className="font-bold text-amber-950 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                 <AlertTriangle className="w-4 h-4 text-amber-600" />
-                Missing Statutory Prerequisites Checklist
+                Required Next Steps & Statutory Compliance Checklist
               </h3>
               <ul className="space-y-1.5 text-amber-900 text-[11px]">
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                  <strong>Indian APS Certificate:</strong> Mandatory verification through Academic Evaluation Centre New Delhi.
+                  <strong>Indian APS Certificate:</strong> Mandatory verification through Academic Evaluation Centre New Delhi prior to visa appointment.
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                  <strong>Goethe-Institut B2 German Language Exam:</strong> Required for clinical training and German-taught modules.
+                  <strong>Sperrkonto Setup (German Blocked Account):</strong> Deposit mandatory subsistence funds (€11,904 / year) with an accredited German provider (Coracle / Expatrio).
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                  <strong>Statutory Health Insurance (TK / Barmer):</strong> Integration required before university enrollment.
+                  <strong>Goethe-Institut / telc Language Proof:</strong> Minimum German B1/B2 for Ausbildung or English C1 for International Master's.
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                  <strong>Statutory Health Insurance (TK / Barmer):</strong> Integration required before German university matriculation or employment start.
                 </li>
               </ul>
             </div>

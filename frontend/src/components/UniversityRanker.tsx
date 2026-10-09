@@ -53,6 +53,7 @@ export const UniversityRanker: React.FC<UniversityRankerProps> = ({
   const [maxCutoffFilter, setMaxCutoffFilter] = useState<number>(3.5);
   
   // Interactive Bavarian Formula Widget States
+  const [selectedScale, setSelectedScale] = useState<'INDIAN' | 'US' | 'PERCENTAGE'>('INDIAN');
   const [indianCgpaInput, setIndianCgpaInput] = useState<number>(8.5);
   const [maxCgpaScale, setMaxCgpaScale] = useState<number>(10.0);
   const [minPassScale, setMinPassScale] = useState<number>(4.0);
@@ -65,18 +66,67 @@ export const UniversityRanker: React.FC<UniversityRankerProps> = ({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 12;
 
-  // Calculate live Bavarian Converted GPA
-  const calculatedBavarianGpa = useMemo(() => {
-    if (applicant?.education?.germanGrade) {
-      return applicant.education.germanGrade;
+  // Handle scale change
+  const handleScaleSelect = (scale: 'INDIAN' | 'US' | 'PERCENTAGE') => {
+    setSelectedScale(scale);
+    if (scale === 'INDIAN') {
+      setMaxCgpaScale(10.0);
+      setMinPassScale(4.0);
+      setIndianCgpaInput(8.5);
+    } else if (scale === 'US') {
+      setMaxCgpaScale(4.0);
+      setMinPassScale(2.0);
+      setIndianCgpaInput(3.6);
+    } else if (scale === 'PERCENTAGE') {
+      setMaxCgpaScale(100.0);
+      setMinPassScale(40.0);
+      setIndianCgpaInput(82.0);
     }
-    // Bavarian Formula: 1 + 3 * ((Nmax - Nd) / (Nmax - Nmin))
+  };
+
+  // Calculate live Bavarian Converted GPA using KMK Bavarian Formula
+  const calculatedBavarianGpa = useMemo(() => {
+    // KMK Bavarian Formula: 1 + 3 * ((Nmax - Nd) / (Nmax - Nmin))
     const p = Math.max(minPassScale, Math.min(maxCgpaScale, indianCgpaInput));
     const converted = 1 + 3 * ((maxCgpaScale - p) / (maxCgpaScale - minPassScale));
-    return Math.round(converted * 100) / 100;
-  }, [applicant?.education?.germanGrade, indianCgpaInput, maxCgpaScale, minPassScale]);
+    const rounded = Math.round(converted * 100) / 100;
+    return Math.max(1.0, Math.min(4.0, rounded));
+  }, [indianCgpaInput, maxCgpaScale, minPassScale]);
 
   const applicantGpa = calculatedBavarianGpa;
+
+  // Standing badge determined by Bavarian German Grade
+  const standingBadge = useMemo(() => {
+    if (applicantGpa <= 1.5) {
+      return {
+        label: '1.0 - 1.5 (TU9 Elite)',
+        title: 'TU9 Elite',
+        color: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30',
+        textColor: 'text-emerald-400'
+      };
+    } else if (applicantGpa <= 2.5) {
+      return {
+        label: '1.6 - 2.5 (Direct Public University)',
+        title: 'Direct Public University',
+        color: 'bg-sky-500/20 text-sky-300 border-sky-400/30',
+        textColor: 'text-sky-400'
+      };
+    } else if (applicantGpa <= 3.0) {
+      return {
+        label: '2.6 - 3.0 (Fachhochschulen / UAS)',
+        title: 'Fachhochschulen / UAS',
+        color: 'bg-amber-500/20 text-amber-300 border-amber-400/30',
+        textColor: 'text-amber-400'
+      };
+    } else {
+      return {
+        label: '> 3.0 (Preparatory Bridge Required)',
+        title: 'Preparatory Bridge Required',
+        color: 'bg-rose-500/20 text-rose-300 border-rose-400/30',
+        textColor: 'text-rose-400'
+      };
+    }
+  }, [applicantGpa]);
 
   // Toggle Shortlist
   const toggleShortlistUni = (uniId: string) => {
@@ -239,24 +289,61 @@ export const UniversityRanker: React.FC<UniversityRankerProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
             <Calculator className="w-5 h-5 text-amber-400" />
-            <h2 className="text-sm font-bold text-white">Interactive Bavarian GPA Conversion Calculator</h2>
+            <h2 className="text-sm font-bold text-white">KMK Bavarian GPA Engine & University Fit Calculator</h2>
           </div>
           <div className="text-[11px] text-sky-200 font-mono">
-            Formula: 1 + 3 × [(Nmax - Nd) / (Nmax - Nmin)]
+            KMK Formula: 1 + 3 × [(Nmax - Nd) / (Nmax - Nmin)]
+          </div>
+        </div>
+
+        {/* Dynamic Scale Selector Tabs */}
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-slate-300 font-semibold text-[11px]">Academic Scale:</span>
+          <div className="inline-flex rounded-xl bg-white/10 p-1 border border-white/10">
+            <button
+              onClick={() => handleScaleSelect('INDIAN')}
+              className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-all ${
+                selectedScale === 'INDIAN'
+                  ? 'bg-amber-400 text-slate-950 shadow-xs'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              🇮🇳 Indian 10.0 CGPA
+            </button>
+            <button
+              onClick={() => handleScaleSelect('US')}
+              className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-all ${
+                selectedScale === 'US'
+                  ? 'bg-amber-400 text-slate-950 shadow-xs'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              🇺🇸 US 4.0 GPA
+            </button>
+            <button
+              onClick={() => handleScaleSelect('PERCENTAGE')}
+              className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-all ${
+                selectedScale === 'PERCENTAGE'
+                  ? 'bg-amber-400 text-slate-950 shadow-xs'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              📊 Percentage (100%)
+            </button>
           </div>
         </div>
 
         <div className="grid sm:grid-cols-4 gap-4 items-center text-xs">
           <div>
             <label className="text-slate-300 block text-[11px] font-semibold mb-1">
-              Indian / Home CGPA:
+              {selectedScale === 'INDIAN' ? 'Indian CGPA (Nd):' : selectedScale === 'US' ? 'US GPA (Nd):' : 'Percentage (Nd):'}
             </label>
             <div className="flex items-center gap-2">
               <input
                 type="number"
-                min="4.0"
-                max="10.0"
-                step="0.1"
+                min={minPassScale}
+                max={maxCgpaScale}
+                step={selectedScale === 'PERCENTAGE' ? '0.5' : '0.05'}
                 value={indianCgpaInput}
                 onChange={(e) => setIndianCgpaInput(Number(e.target.value))}
                 className="w-24 bg-white/10 border border-white/20 rounded-lg px-2.5 py-1 text-white font-mono font-bold focus:outline-none focus:ring-2 focus:ring-amber-400"
@@ -267,7 +354,7 @@ export const UniversityRanker: React.FC<UniversityRankerProps> = ({
 
           <div>
             <label className="text-slate-300 block text-[11px] font-semibold mb-1">
-              Max Score Scale:
+              Max Score Scale (Nmax):
             </label>
             <input
               type="number"
@@ -279,7 +366,7 @@ export const UniversityRanker: React.FC<UniversityRankerProps> = ({
 
           <div>
             <label className="text-slate-300 block text-[11px] font-semibold mb-1">
-              Minimum Passing Mark:
+              Minimum Pass (Nmin):
             </label>
             <input
               type="number"
@@ -289,15 +376,37 @@ export const UniversityRanker: React.FC<UniversityRankerProps> = ({
             />
           </div>
 
-          <div className="bg-white/10 rounded-xl p-3 border border-white/20 flex items-center justify-between">
-            <div>
-              <span className="text-[10px] text-slate-300 uppercase font-bold block">German Converted GPA:</span>
-              <span className="text-xl font-black text-amber-400 font-mono">
+          <div className="bg-white/10 rounded-xl p-3 border border-white/20 flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-slate-300 uppercase font-bold">German Converted GPA:</span>
+              <span className="text-[10px] text-slate-300 font-medium">(1.0 Best • 4.0 Pass)</span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-2xl font-black text-amber-400 font-mono">
                 {applicantGpa.toFixed(2)}
               </span>
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${standingBadge.color}`}>
+                {standingBadge.title}
+              </span>
             </div>
-            <span className="text-[10px] text-slate-300 block text-right font-medium">
-              (1.0 Best • 4.0 Pass)
+          </div>
+        </div>
+
+        {/* Standing Badges Legend */}
+        <div className="pt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+          <span className="text-slate-300 font-semibold">German Admission Standing:</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`px-2.5 py-0.5 rounded-full border ${applicantGpa <= 1.5 ? 'bg-emerald-500/30 text-emerald-300 border-emerald-400 font-bold ring-1 ring-emerald-400' : 'bg-white/5 text-slate-400 border-white/10'}`}>
+              1.0 - 1.5 (TU9 Elite)
+            </span>
+            <span className={`px-2.5 py-0.5 rounded-full border ${applicantGpa > 1.5 && applicantGpa <= 2.5 ? 'bg-sky-500/30 text-sky-300 border-sky-400 font-bold ring-1 ring-sky-400' : 'bg-white/5 text-slate-400 border-white/10'}`}>
+              1.6 - 2.5 (Direct Public University)
+            </span>
+            <span className={`px-2.5 py-0.5 rounded-full border ${applicantGpa > 2.5 && applicantGpa <= 3.0 ? 'bg-amber-500/30 text-amber-300 border-amber-400 font-bold ring-1 ring-amber-400' : 'bg-white/5 text-slate-400 border-white/10'}`}>
+              2.6 - 3.0 (Fachhochschulen / UAS)
+            </span>
+            <span className={`px-2.5 py-0.5 rounded-full border ${applicantGpa > 3.0 ? 'bg-rose-500/30 text-rose-300 border-rose-400 font-bold ring-1 ring-rose-400' : 'bg-white/5 text-slate-400 border-white/10'}`}>
+              &gt; 3.0 (Preparatory Bridge Required)
             </span>
           </div>
         </div>

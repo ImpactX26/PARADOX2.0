@@ -86,7 +86,7 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ applicant }) => {
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>🇩🇪 Deutsch (DIN 5008)</span>
+              <span>[ 🇩🇪 Deutsch (Tabellarischer Lebenslauf) ]</span>
             </button>
             <button
               onClick={() => setLanguage('en')}
@@ -96,7 +96,7 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ applicant }) => {
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>🇬🇧 English (Europass)</span>
+              <span>[ 🇬🇧 English (Europass) ]</span>
             </button>
           </div>
 

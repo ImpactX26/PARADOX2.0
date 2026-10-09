@@ -138,6 +138,33 @@ export interface RecommendedJourney {
   nextSteps: string[];
 }
 
+export interface TranscriptModule {
+  id: string;
+  courseName: string;
+  category: 'Mathematics & Theory' | 'Core Systems & Algorithms' | 'Applied Electives' | 'Other / General';
+  credits: number; // Indian / home credits
+  letterGrade?: string;
+  isVerified?: boolean;
+}
+
+export interface EctsCategoryAudit {
+  category: 'Mathematics & Theory' | 'Core Systems & Algorithms' | 'Applied Electives';
+  requiredEcts: number;
+  earnedEcts: number;
+  deficitEcts: number;
+  isSatisfied: boolean;
+  statusText: string;
+}
+
+export interface EctsAuditResult {
+  multiplier: number; // default 1.5
+  totalIndianCredits: number;
+  totalEarnedEcts: number;
+  categories: EctsCategoryAudit[];
+  isAllPrerequisitesMet: boolean;
+  summaryBadge: string;
+}
+
 export interface ApplicantRecord {
   id: string;
   createdAt: string;
@@ -157,7 +184,21 @@ export interface ApplicantRecord {
   chancenkartePoints?: number;
   timelineAudit?: TimelineAuditResult;
   identityCrossCheck?: IdentityCrossCheckReport;
+  transcriptModules?: TranscriptModule[];
+  ectsMultiplier?: number;
+  dynamicMilestones?: {
+    birthYear?: number;
+    highSchoolYear?: number;
+    twelfthYear?: number;
+    degreeStartYear?: number;
+    degreeGraduationYear?: number;
+    bachelorStartYear?: number;
+    bachelorGradYear?: number;
+    workStartYear?: number;
+    workEndYear?: number;
+  };
 }
+
 
 export interface UniversityMatchResult {
   id: string;

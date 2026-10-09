@@ -228,9 +228,12 @@ export class DocumentScannerService {
       ? 'Verified from Uploaded CV'
       : (authenticityStatus === 'AUTHENTIC' ? 'Verified from Document' : 'Applicant-Provided Claim');
 
+    // Strict sensitive ID redaction: Aadhaar, PAN, Passport, Voter ID
+    const sanitizedText = this.redactSensitiveIds(extractedText);
+
     return {
       fileName,
-      extractedText,
+      extractedText: sanitizedText,
       authenticityStatus,
       confidenceScore: confidence,
       tamperAlerts: alerts,
@@ -443,4 +446,45 @@ export class DocumentScannerService {
 
     return fields;
   }
+
+  /**
+   * Client-and-Server Privacy Shield: Mask Aadhaar, PAN, Passport, Voter ID
+   */
+  public redactSensitiveIds(text: string): string {
+    if (!text) return text;
+    let sanitized = text;
+
+    // 1. Indian Aadhaar: 12 digits (render as ••••••••1234 [Masked])
+    const aadhaarRegex = /\b(\d{4})[\s-]?(\d{4})[\s-]?(\d{4})\b/g;
+    sanitized = sanitized.replace(aadhaarRegex, (_match, _p1, _p2, p3) => {
+      return `••••••••${p3} [Masked]`;
+    });
+
+    // 2. Indian PAN Card: 10 chars (render as ••••••••1234 [Masked])
+    const panRegex = /\b([A-Z]{5})(\d{4})([A-Z])\b/g;
+    sanitized = sanitized.replace(panRegex, (_match, _p1, p2, p3) => {
+      return `••••••••${p2.slice(-2)}${p3} [Masked]`;
+    });
+
+    // 3. Indian / International Passport: 1 letter + 7 digits
+    const passportRegex = /\b([A-PR-WYa-pr-wy])([0-9]{4})([0-9]{3})\b/g;
+    sanitized = sanitized.replace(passportRegex, (_match, _p1, _p2, p3) => {
+      return `••••••••${p3} [Masked]`;
+    });
+
+    // 4. Indian Voter ID (EPIC): 3 letters + 7 digits
+    const voterRegex = /\b([A-Z]{3})([0-9]{4})([0-9]{3})\b/g;
+    sanitized = sanitized.replace(voterRegex, (_match, _p1, _p2, p3) => {
+      return `••••••••${p3} [Masked]`;
+    });
+
+    // 5. Generic government / serial IDs with 8-16 digits
+    const genericIdRegex = /\b\d{8,16}\b/g;
+    sanitized = sanitized.replace(genericIdRegex, (digits) => {
+      return `••••••••${digits.slice(-4)} [Masked]`;
+    });
+
+    return sanitized;
+  }
 }
+

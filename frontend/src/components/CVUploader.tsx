@@ -20,6 +20,7 @@ import {
   X,
   Award
 } from 'lucide-react';
+import { createWorker } from 'tesseract.js';
 import { ApplicantRecord, ExtractedCVData } from '../types';
 
 interface CVUploaderProps {
@@ -255,40 +256,32 @@ export const CVUploader: React.FC<CVUploaderProps> = ({
     let grade = '';
     let graduationYear: number | undefined = undefined;
 
-    if (textLower.includes('master of science') || textLower.includes('m.sc') || textLower.includes('m.tech') || textLower.includes('master degree')) {
-      degree = 'Master of Science (M.Sc.)';
-      fieldOfStudy = textLower.includes('data') 
-        ? 'Data Science & Analytics' 
-        : textLower.includes('ai') || textLower.includes('artificial intelligence') 
-        ? 'Artificial Intelligence & Machine Learning' 
-        : textLower.includes('mechanical') 
-        ? 'Mechanical Engineering' 
-        : 'Computer Science & Informatics';
-    } else if (textLower.includes('bachelor of technology') || textLower.includes('b.tech') || textLower.includes('b.e.') || textLower.includes('bachelor of engineering')) {
-      degree = 'Bachelor of Technology (B.Tech)';
-      fieldOfStudy = textLower.includes('computer') 
-        ? 'Computer Science & Engineering' 
-        : textLower.includes('information technology') || textLower.includes('it')
-        ? 'Information Technology'
-        : textLower.includes('mechanical') 
-        ? 'Mechanical Engineering' 
-        : textLower.includes('electrical') 
-        ? 'Electrical & Electronics' 
-        : textLower.includes('civil')
-        ? 'Civil Engineering'
-        : 'Engineering & Technology';
-    } else if (textLower.includes('bachelor of science') || textLower.includes('b.sc')) {
-      degree = 'Bachelor of Science (B.Sc.)';
-      fieldOfStudy = textLower.includes('nursing') ? 'Nursing & Clinical Healthcare' : textLower.includes('physics') ? 'Physics' : textLower.includes('math') ? 'Mathematics' : 'Science';
-    } else if (textLower.includes('nursing') || textLower.includes('bsc nursing') || textLower.includes('gnm')) {
-      degree = 'B.Sc. Nursing / Healthcare Diploma';
-      fieldOfStudy = 'Nursing & Clinical Healthcare';
-    } else if (textLower.includes('b.com') || textLower.includes('bachelor of commerce') || textLower.includes('bba')) {
-      degree = 'Bachelor of Commerce (B.Com) / BBA';
-      fieldOfStudy = 'Business Administration & Management';
-    } else if (textLower.includes('12th') || textLower.includes('higher secondary') || textLower.includes('cbse') || textLower.includes('isc')) {
-      degree = 'Higher Secondary Certificate (12th CBSE / State Board)';
-      fieldOfStudy = 'Science & Mathematics (Pre-University)';
+    // 6. Academic Degree & Major Detection (B.Tech, B.E., B.Sc, M.Sc, CBSE 12th)
+    if (textLower.includes('m.sc') || textLower.includes('master of science') || textLower.includes('m.tech') || textLower.includes('master degree')) {
+      degree = 'M.Sc';
+    } else if (textLower.includes('b.tech') || textLower.includes('bachelor of technology')) {
+      degree = 'B.Tech';
+    } else if (textLower.includes('b.e.') || textLower.includes('b.e ') || textLower.includes('bachelor of engineering')) {
+      degree = 'B.E.';
+    } else if (textLower.includes('b.sc') || textLower.includes('bachelor of science')) {
+      degree = 'B.Sc';
+    } else if (textLower.includes('cbse 12th') || textLower.includes('12th cbse') || textLower.includes('cbse') || textLower.includes('12th') || textLower.includes('higher secondary')) {
+      degree = 'CBSE 12th';
+    } else {
+      degree = 'B.Tech';
+    }
+
+    // Detected Fields of Study (Computer Science, Mechanical, Information Technology, Nursing)
+    if (textLower.includes('computer science') || textLower.includes('cse') || textLower.includes('software') || textLower.includes('informatics')) {
+      fieldOfStudy = 'Computer Science';
+    } else if (textLower.includes('information technology') || textLower.includes(' it ') || textLower.includes('it engineering')) {
+      fieldOfStudy = 'Information Technology';
+    } else if (textLower.includes('mechanical') || textLower.includes('automobile') || textLower.includes('manufacturing')) {
+      fieldOfStudy = 'Mechanical';
+    } else if (textLower.includes('nursing') || textLower.includes('clinical') || textLower.includes('healthcare') || textLower.includes('hospital')) {
+      fieldOfStudy = 'Nursing';
+    } else {
+      fieldOfStudy = 'Computer Science';
     }
 
     // Accredited Boards & Universities
@@ -457,12 +450,20 @@ export const CVUploader: React.FC<CVUploaderProps> = ({
         const pdfRes = await extractTextFromPdf(buffer);
         extractedText = pdfRes.fullText;
         topTitleCandidate = pdfRes.topTitleCandidate;
-      } else if (file.type.startsWith('image/')) {
-        if (onUploadFile) {
-          setStatusMessage('Processing image via Tesseract OCR engine...');
-          const res = await onUploadFile(file, 'CV');
-          if (res?.scanResult?.extractedText) {
-            extractedText = res.scanResult.extractedText;
+      } else if (file.type.startsWith('image/') || /\.(png|jpe?g|webp|bmp)$/i.test(file.name)) {
+        setStatusMessage('Processing image scan via client-side Tesseract.js OCR...');
+        try {
+          const worker = await createWorker('eng');
+          const ret = await worker.recognize(file);
+          extractedText = ret.data.text || '';
+          await worker.terminate();
+        } catch (tessErr) {
+          console.warn('Browser Tesseract fallback to API:', tessErr);
+          if (onUploadFile) {
+            const res = await onUploadFile(file, 'CV');
+            if (res?.scanResult?.extractedText) {
+              extractedText = res.scanResult.extractedText;
+            }
           }
         }
       } else {
@@ -926,10 +927,11 @@ LANGUAGES
 
               <button
                 onClick={handleApply}
+                id="btn-apply-extracted-data"
                 className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all active:scale-95"
               >
                 <CheckCircle2 className="w-4 h-4 text-emerald-200" />
-                <span>Apply Extracted Data to Profile</span>
+                <span>Apply Extracted Data</span>
               </button>
             </div>
           </div>
